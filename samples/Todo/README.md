@@ -81,17 +81,17 @@ La récursion reste **opt-in** : sans le paramètre, un dossier non vide est ref
 local, une requête par fichier ne coûte rien, et une opération groupée soulèverait
 des questions de résultat partiel qui ne se posent pas ici.
 
-## 3. Que répond le listing d'un dossier inexistant ?
+## 3. Que répond le listing d'un dossier inexistant ? — **tranché**
 
 Une tâche sans pièce jointe n'a pas de dossier. `GET /data/attachments/7/` doit-il
-retourner `404`, ou une liste vide ? §21 ne le dit pas.
+retourner `404`, ou une liste vide ?
 
-L'exemple suppose `404` et traite ce cas comme « aucune pièce jointe ». Une liste
-vide serait plus commode et éviterait de traiter une erreur comme un cas normal.
+**Décision (§21) : `404`.** Un dossier absent et un dossier vide sont deux états
+différents, et l'API ne les confond pas. C'est ce que l'exemple supposait déjà : il
+traite ce `404` comme « aucune pièce jointe ».
 
-> §22.1 a réglé la question voisine : la barre oblique finale distingue désormais un
-> fichier d'un dossier, sur toutes les méthodes. Reste à décider ce que répond le
-> listing d'un dossier qui n'existe pas.
+§22.1 avait réglé la question voisine : la barre oblique finale distingue un fichier
+d'un dossier sur toutes les méthodes.
 
 ## 4. Rien n'indique qu'un fichier a été remplacé
 

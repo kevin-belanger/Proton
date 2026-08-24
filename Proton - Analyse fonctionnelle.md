@@ -673,6 +673,16 @@ Exemple conceptuel :
 Le listing ne retourne que des métadonnées déjà connues du système de fichiers. Aucune
 empreinte du contenu n'est calculée, ni lors d'un listing, ni lors d'une lecture (§16).
 
+Le listing d'un dossier inexistant retourne :
+
+```http
+404 Not Found
+```
+
+et non une liste vide. Un dossier absent et un dossier vide sont deux états
+différents, et l'API ne doit pas les confondre : une application qui les distingue
+doit pouvoir le faire.
+
 ---
 
 # 22. Dossiers dans `data`
