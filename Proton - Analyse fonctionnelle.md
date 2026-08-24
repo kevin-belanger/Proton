@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 0.3
+**Version du document :** 0.4
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 0.4 — navigation vers les espaces réservés interdite (§51.1) et téléchargement explicite (§15.1), à la suite de l'exemple `samples/Todo`.
 * 0.3 — périmètre V1 resserré : ajout de l'API d'application (§24.1) ; report du
   contrôle de concurrence sur les fichiers (§16 à §20) et de la restriction d'origine
   (§52) ; §57 à §60, CA-05 à CA-09 et la phase 3 ajustés en conséquence.
@@ -255,24 +256,23 @@ Si `app` n'existe pas, Proton doit :
 
 1. créer le dossier;
 2. créer automatiquement un fichier `index.html`;
-3. y placer une application minimale de type Hello World.
+3. y placer une page d'accueil minimale.
 
-Exemple conceptuel :
+La même page est engendrée lorsque `app` existe déjà mais ne contient pas
+d'`index.html` : un dossier vide laisserait autrement l'utilisateur devant une erreur
+`404` au premier démarrage.
 
-```html
-<!doctype html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Proton</title>
-</head>
-<body>
-    <h1>Hello World</h1>
-</body>
-</html>
-```
+Cette page doit tenir en un seul fichier, sans ressource externe, et rester jetable :
+elle est un point de départ que le développeur remplace par sa propre application,
+non un gabarit à désinstaller.
 
-Le contenu exact pourra être légèrement différent.
+Elle doit néanmoins faire plus qu'afficher un texte fixe. En interrogeant `/api/app`
+(§24.1) pour afficher le nom et la version de l'application, et en dressant l'état des
+services de Proton, elle montre d'emblée ce qu'une page Web ordinaire ne peut pas
+faire — et sert de premier diagnostic si quelque chose ne répond pas.
+
+Une application de démonstration complète n'a pas sa place ici : elle vit dans
+`samples` (§64) et n'a pas à voyager dans chaque exécutable produit.
 
 Si `data` n'existe pas, Proton doit simplement le créer.
 
@@ -484,6 +484,27 @@ modification du fichier. Il permet à la WebView de réémettre une requête con
 `If-None-Match` et de recevoir `304 Not Modified` lorsque le fichier n'a pas changé.
 
 Il ne constitue pas un mécanisme de contrôle de concurrence : voir §16.
+
+## 15.1 Forcer un téléchargement
+
+Une application peut demander qu'un fichier soit téléchargé plutôt qu'affiché :
+
+```http
+GET /data/rapport.pdf?download=1
+```
+
+Proton ajoute alors :
+
+```http
+Content-Disposition: attachment; filename="rapport.pdf"
+```
+
+Ce paramètre est **facultatif** et à la main de l'application. Proton ne doit pas
+imposer `Content-Disposition` par défaut : cela interdirait des usages légitimes tels
+que l'affichage d'un document dans un cadre.
+
+La protection contre la disparition de l'application relève d'un autre mécanisme,
+décrit en §51.1, qui ne dépend d'aucun type de fichier.
 
 ---
 
@@ -1474,6 +1495,40 @@ devrait idéalement être ouverte dans le navigateur Windows par défaut ou êtr
 
 Les URL appartenant à l'origine locale Proton demeurent dans la WebView.
 
+## 51.1 Les espaces réservés ne sont jamais des destinations
+
+Une exception s'applique aux espaces réservés `/data` et `/api` (§49).
+
+Ces espaces servent des **données**, non des pages. Une navigation de premier niveau
+vers l'un d'eux afficherait le contenu du fichier **à la place** de l'application :
+
+```text
+<a href="/data/rapport.pdf">Rapport</a>
+```
+
+Un clic sur ce lien remplacerait l'application par le lecteur PDF intégré. La fenêtre
+n'ayant ni bouton Précédent ni barre d'adresse (§11), l'utilisateur n'aurait aucun
+moyen d'en revenir : il devrait fermer et relancer l'application.
+
+Proton doit donc **annuler** toute navigation de premier niveau vers un espace
+réservé et confier la ressource au système.
+
+Cette règle ne s'applique qu'à la navigation du document principal. Les images, les
+feuilles de style, les médias, les cadres et les requêtes `fetch` ne sont pas des
+navigations et demeurent parfaitement libres :
+
+```html
+<img src="/data/photo.jpg">          <!-- fonctionne -->
+<iframe src="/data/rapport.pdf">     <!-- fonctionne -->
+fetch('/data/settings.json')         <!-- fonctionne -->
+```
+
+Le filtrage porte sur la nature de la requête, non sur le type du fichier : aucune
+liste d'extensions n'est à tenir à jour.
+
+> Cette règle a été mise au jour en écrivant l'exemple `samples/Todo`, dont les
+> pièces jointes exposaient exactement ce défaut.
+
 ---
 
 # 52. Origine des requêtes — restriction reportée après la V1
@@ -2134,11 +2189,17 @@ avec :
 * listing des dossiers;
 * `ETag` faible et `Last-Modified`, pour la validation de cache;
 * écriture atomique;
+* `?download=1` (§15.1);
 * codes HTTP;
 * format d'erreur uniforme.
 
 Ajouter également la route `/api/app` (§24.1), qui appartient à la même couche HTTP
 et ne dépend que de la configuration embarquée.
+
+L'exemple `samples/Todo` a été écrit avant cette phase afin d'éprouver le contrat de
+ces routes par l'usage. Son `README` recense les questions qu'il a mises au jour et
+qui restent à trancher — notamment le listing d'un dossier inexistant et la
+suppression récursive.
 
 ---
 

@@ -19,11 +19,6 @@ namespace Proton.Hosting;
 /// </summary>
 public sealed class LocalWebHost : IAsyncDisposable
 {
-    /// Espaces d'URL réservés aux API de Proton. Ils ont priorité sur les fichiers
-    /// statiques de `app`, afin qu'un fichier `app/data/x.html` ne puisse pas prendre
-    /// le contrôle de la route `/data/x.html` (§49).
-    private static readonly string[] ReservedPrefixes = ["/data", "/api"];
-
     private readonly WebApplication _application;
 
     private LocalWebHost(WebApplication application, Uri address)
@@ -78,12 +73,7 @@ public sealed class LocalWebHost : IAsyncDisposable
     {
         application.Use(async (context, next) =>
         {
-            PathString path = context.Request.Path;
-
-            bool reserved = ReservedPrefixes.Any(prefix =>
-                path.StartsWithSegments(prefix, StringComparison.OrdinalIgnoreCase));
-
-            if (!reserved)
+            if (!ReservedSpaces.Contains(context.Request.Path.Value ?? string.Empty))
             {
                 await next(context).ConfigureAwait(false);
                 return;

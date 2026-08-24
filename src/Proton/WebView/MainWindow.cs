@@ -96,16 +96,20 @@ public sealed class MainWindow : Form
         settings.AreBrowserAcceleratorKeysEnabled = false;
         settings.IsSwipeNavigationEnabled = false;
 
-        // Une navigation vers une origine externe ne doit pas remplacer
-        // silencieusement l'application : elle part vers le navigateur par
-        // défaut de Windows (§51).
+        // Aucune navigation ne doit faire disparaître l'application (§51). La fenêtre
+        // n'ayant ni bouton Précédent ni barre d'adresse (§11), il n'existerait aucun
+        // moyen d'en revenir : l'utilisateur devrait fermer et relancer.
+        //
+        // NavigationStarting ne concerne que le document principal. Les images, les
+        // feuilles de style, les requêtes fetch et les cadres passent par d'autres
+        // événements et ne sont donc jamais affectés par ce filtre.
         core.NavigationStarting += (_, e) =>
         {
-            if (IsLocalAddress(e.Uri))
-                return;
-
-            e.Cancel = true;
-            OpenInDefaultBrowser(e.Uri);
+            if (LeavesTheApplication(e.Uri))
+            {
+                e.Cancel = true;
+                OpenInDefaultBrowser(e.Uri);
+            }
         };
 
         // Idem pour tout ce qui demanderait une nouvelle fenêtre : Proton V1 ne gère
@@ -117,10 +121,24 @@ public sealed class MainWindow : Form
         };
     }
 
-    private bool IsLocalAddress(string uri) =>
-        Uri.TryCreate(uri, UriKind.Absolute, out Uri? parsed)
-        && parsed.IsLoopback
-        && parsed.Port == _startAddress.Port;
+    /// <summary>
+    /// Indique qu'une navigation ferait quitter l'application à la WebView.
+    /// </summary>
+    /// <remarks>
+    /// Deux cas : une origine étrangère, et les espaces réservés aux API. Ces
+    /// derniers servent des données, non des pages — ouvrir une pièce jointe par
+    /// <c>/data/rapport.pdf</c> afficherait le document à la place de l'application.
+    /// Les pages de <c>app</c> restent libres de naviguer entre elles.
+    /// </remarks>
+    private bool LeavesTheApplication(string uri)
+    {
+        if (!Uri.TryCreate(uri, UriKind.Absolute, out Uri? parsed))
+            return false;
+
+        bool local = parsed.IsLoopback && parsed.Port == _startAddress.Port;
+
+        return !local || Hosting.ReservedSpaces.Contains(parsed.AbsolutePath);
+    }
 
     private static void OpenInDefaultBrowser(string uri)
     {

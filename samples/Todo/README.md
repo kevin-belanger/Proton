@@ -41,26 +41,28 @@ idée de ce que serait une bibliothèque officielle si elle voyait le jour.
 # Ce que cet exercice a révélé
 
 Écrire cette application avant les API a mis au jour six questions que la
-spécification ne tranche pas. Elles sont à régler **avant** les phases 3 et 4.
+spécification ne tranchait pas. La première est réglée ; les autres restent à
+décider **avant** les phases 3 et 4.
 
-## 1. Ouvrir une pièce jointe remplacerait l'application
+## 1. Ouvrir une pièce jointe remplacerait l'application — **tranché**
 
 Le cas le plus sérieux. Un lien vers `/data/rapport.pdf` pointe vers l'origine
-locale ; or §51 pose que les URL de l'origine locale **restent dans la WebView**.
-Cliquer sur une pièce jointe remplacerait donc l'application par le visualiseur PDF
-intégré, sans retour possible — il n'y a ni bouton Précédent ni barre d'adresse
+locale ; or §51 posait que les URL de l'origine locale **restent dans la WebView**.
+Cliquer sur une pièce jointe aurait donc remplacé l'application par le visualiseur
+PDF intégré, sans retour possible — il n'y a ni bouton Précédent ni barre d'adresse
 (§11).
 
-§51 ne traite que des origines externes. Il manque une règle pour les fichiers
-locaux. Trois pistes :
+**Décision (§51.1) :** la fenêtre annule toute navigation de premier niveau vers
+`/data` ou `/api` et confie la ressource au système.
 
-- servir `/data` avec `Content-Disposition: attachment`, ce qui déclenche un
-  téléchargement plutôt qu'une navigation — mais empêche d'afficher une image
-  dans la page;
-- un paramètre de requête explicite, `?download=1`, laissant le choix à
-  l'application;
-- intercepter, dans la fenêtre, les navigations de premier niveau vers `/data`
-  et les confier au système.
+Le filtrage porte sur la **nature de la requête**, non sur le type du fichier :
+aucune liste d'extensions à tenir à jour, et `<img>`, `<iframe>`, `<video>` et
+`fetch` continuent de fonctionner sans exception, n'étant pas des navigations.
+
+Écarté : imposer `Content-Disposition: attachment` sur tout `/data`. Cela aurait
+réglé le problème en interdisant au passage l'affichage d'un document dans un cadre.
+Le paramètre facultatif `?download=1` (§15.1) reste disponible pour l'application qui
+veut explicitement un téléchargement.
 
 ## 2. Supprimer une tâche coûte N+2 requêtes
 

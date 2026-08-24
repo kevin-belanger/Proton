@@ -147,6 +147,22 @@ public sealed class LocalWebHostTests : IDisposable
         Assert.DoesNotContain("détourné", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task Ne_reserve_que_les_segments_exacts()
+    {
+        // `/database.html` commence par « /data » sans appartenir à l'espace réservé :
+        // il doit être servi normalement depuis `app`.
+        await File.WriteAllTextAsync(Path.Combine(_root, "app", "database.html"), "à moi");
+
+        await using LocalWebHost host = await StartAsync();
+        using HttpClient client = CreateClient(host);
+
+        HttpResponseMessage response = await client.GetAsync("/database.html");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("à moi", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+    }
+
     // --- CA-13 : libération du port -----------------------------------------------
 
     [Fact]
