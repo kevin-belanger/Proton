@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 0.5
+**Version du document :** 0.6
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 0.6 — comportement d'ouverture d'une pièce jointe arrêté (§51.2) ; traitement générique des échecs d'écriture (§17.1) et normalisation des noms documentée (§17.2) ; listing d'un dossier inexistant en 404 (§21).
 * 0.5 — gestion des dossiers spécifiée (§22) : barre oblique finale comme discriminant, création idempotente, suppression récursive explicite et ses précautions.
 * 0.4 — navigation vers les espaces réservés interdite (§51.1) et téléchargement explicite (§15.1), à la suite de l'exemple `samples/Todo`.
 * 0.3 — périmètre V1 resserré : ajout de l'API d'application (§24.1) ; report du
@@ -548,6 +549,48 @@ Le corps HTTP contient directement le nouveau contenu.
 
 L'écriture est inconditionnelle. Aucun en-tête de précondition n'est requis, et un
 `If-Match` éventuellement transmis est ignoré par la V1.
+
+## 17.1 Lorsque l'écriture échoue
+
+Proton ne tient aucune liste de noms interdits et ne cherche pas à anticiper les
+refus du système de fichiers. Il tente l'écriture ; si elle échoue, il retourne une
+erreur au format uniforme (§24) :
+
+```json
+{
+  "error": {
+    "code": "write_failed",
+    "message": "The file could not be written."
+  }
+}
+```
+
+Disque plein, fichier verrouillé par un autre programme, droits insuffisants, nom
+refusé par Windows : tous ces cas relèvent du même traitement. Chercher à les
+distinguer par avance produirait un code fragile, dépendant de la version de Windows,
+pour un bénéfice nul — l'application ne peut de toute façon que signaler l'échec à
+l'utilisateur.
+
+Le message d'erreur ne doit pas contenir de chemin physique : l'application Web
+raisonne en chemins relatifs à `data` (§7).
+
+## 17.2 Noms normalisés par Windows
+
+Windows normalise silencieusement certains noms de fichiers : un nom terminé par un
+point ou une espace perd ce caractère. `rapport.` et `rapport ` désignent donc tous
+deux le fichier `rapport`, et une écriture successive sur ces deux noms n'en laisse
+qu'un seul.
+
+Ce comportement est **accepté tel quel**. Il ne provoque ni erreur ni perte d'accès :
+une application peut toujours relire ce qu'elle vient d'écrire.
+
+La règle qui en découle est simple : **le nom retourné par le listing (§21) fait
+foi**, et non celui que l'application a soumis.
+
+> Les noms hérités de MS-DOS — `CON`, `AUX`, `PRN`, `COM1` — ne posent pas de
+> difficulté : Windows les accepte aujourd'hui comme des noms de fichiers ordinaires.
+> `NUL` fait exception et provoque un échec, traité comme n'importe quel autre échec
+> d'écriture par §17.1.
 
 ---
 
@@ -1633,13 +1676,18 @@ liste d'extensions n'est à tenir à jour.
 > Cette règle a été mise au jour en écrivant l'exemple `samples/Todo`, dont les
 > pièces jointes exposaient exactement ce défaut.
 
-## 51.2 Que devient la ressource interceptée — à trancher
+## 51.2 Que devient la ressource interceptée
 
-Empêcher la disparition de l'application est acquis. Reste à décider ce qui arrive
-ensuite au fichier sur lequel l'utilisateur a cliqué.
+Empêcher la disparition de l'application est acquis. Reste ce qui arrive ensuite au
+fichier sur lequel l'utilisateur a cliqué.
+
+**Le comportement retenu est celui d'une application de bureau ordinaire :** le
+fichier est téléchargé, puis ouvert avec l'application que le système lui associe.
+C'est ce que fait un client de messagerie lorsqu'on ouvre une pièce jointe. La
+fenêtre Proton, elle, reste affichée.
 
 Le comportement provisoire — confier l'URL au navigateur par défaut — fonctionne mais
-ne convient pas comme comportement définitif :
+ne convient pas :
 
 * il ouvre un navigateur complet pour consulter une pièce jointe;
 * le fichier s'affiche dans le navigateur, et non dans l'application que
@@ -1648,20 +1696,21 @@ ne convient pas comme comportement définitif :
   dès que l'application se ferme, et l'entrée laissée dans l'historique du navigateur
   est morte au prochain démarrage.
 
-Le comportement visé est celui d'une application de bureau : le fichier est
-téléchargé, puis ouvert avec l'application qui lui est associée. Deux voies :
+Deux voies permettent d'obtenir le comportement retenu. Le choix relève de
+l'implémentation et sera fait en phase 3, lorsque `/data` servira réellement des
+fichiers :
 
 1. **Par le serveur.** Répondre `Content-Disposition: attachment` lorsque l'en-tête
    `Sec-Fetch-Dest` vaut `document`, c'est-à-dire pour les seules navigations de
    premier niveau. La WebView transforme alors la navigation en téléchargement et
-   affiche sa barre native ; l'application reste à l'écran. Élégant, mais rend le
-   garde-fou de §51.1 inopérant, puisque celui-ci annule la navigation avant même
-   que le serveur ne réponde.
+   affiche sa barre native. Élégant, mais rend le garde-fou de §51.1 inopérant,
+   puisque celui-ci annule la navigation avant même que le serveur ne réponde.
 2. **Par la fenêtre.** Récupérer la ressource, l'enregistrer dans le dossier des
    téléchargements de l'utilisateur, puis la confier au système. Le garde-fou reste
    la seule règle, mais la fenêtre acquiert une responsabilité de téléchargement.
 
-À décider en phase 3, lorsque `/data` servira réellement des fichiers.
+Quelle que soit la voie retenue, l'utilisateur ne doit jamais se retrouver devant un
+navigateur, ni devant une adresse contenant un numéro de port.
 
 ---
 

@@ -40,9 +40,9 @@ idée de ce que serait une bibliothèque officielle si elle voyait le jour.
 
 # Ce que cet exercice a révélé
 
-Écrire cette application avant les API a mis au jour six questions que la
-spécification ne tranchait pas. La première est réglée ; les autres restent à
-décider **avant** les phases 3 et 4.
+Écrire cette application avant les API a mis au jour sept questions que la
+spécification ne tranchait pas. Quatre sont réglées ; trois restent à décider en
+phase 3.
 
 ## 1. Ouvrir une pièce jointe remplacerait l'application — **tranché**
 
@@ -112,11 +112,24 @@ C'est inhérent à l'architecture et probablement acceptable en V1, mais cela do
 être **écrit** : un développeur d'application doit savoir qu'il lui revient de
 gérer ces orphelins.
 
-## 6. Confirmations des points déjà identifiés
+## 6. Noms de fichiers — **tranché**
 
-L'exercice confirme par l'usage deux trous déjà relevés :
+L'exemple assainit les noms côté client, mais rien n'empêchait une autre application
+d'envoyer `PUT /data/CON`.
 
-- **Noms de fichiers.** L'exemple assainit côté client, mais rien n'empêche une
-  autre application d'envoyer `PUT /data/CON`. Le filtrage doit être dans Proton.
-- **Taille des requêtes.** Joindre une vidéo dépasserait la limite par défaut de
-  Kestrel et produirait une erreur brute, hors du format uniforme de §24.
+**Décision (§17.1) : aucune liste de noms interdits.** Proton tente l'écriture ; si
+elle échoue, il retourne `write_failed`. Disque plein, fichier verrouillé, nom refusé
+par Windows relèvent du même traitement.
+
+La mesure a montré que le risque était surestimé : sur Windows 11, `CON`, `AUX`,
+`PRN` et `COM1` sont créés comme des fichiers ordinaires. Seul `NUL` échoue — et un
+échec est exactement ce que §17.1 sait traiter.
+
+Un cas résiduel est documenté plutôt que codé (§17.2) : un nom terminé par un point
+ou une espace est normalisé par Windows. Il ne provoque ni erreur ni perte d'accès,
+mais le nom retourné par le listing fait foi.
+
+## 7. Reste ouvert — taille des requêtes
+
+Joindre une vidéo dépasserait la limite par défaut de Kestrel et produirait une
+erreur brute, hors du format uniforme de §24.
