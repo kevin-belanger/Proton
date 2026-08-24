@@ -84,7 +84,8 @@ public sealed class LocalWebHostTests : IDisposable
         HttpResponseMessage response = await client.GetAsync("/");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains("Hello World", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
+        Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
+        Assert.Contains("Proton", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 
     [Fact]

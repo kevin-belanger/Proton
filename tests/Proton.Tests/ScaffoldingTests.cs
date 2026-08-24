@@ -42,14 +42,23 @@ public sealed class ScaffoldingTests : IDisposable
     }
 
     [Fact]
-    public void Engendre_une_page_daccueil_minimale()
+    public void Engendre_une_page_daccueil_autonome()
     {
         Scaffolding.Result result = Scaffolding.Ensure(Paths);
 
-        string index = Path.Combine(Paths.App, "index.html");
+        string page = File.ReadAllText(Path.Combine(Paths.App, "index.html"));
 
         Assert.True(result.CreatedIndex);
-        Assert.Contains("Hello World", File.ReadAllText(index), StringComparison.Ordinal);
+        Assert.Contains("<!doctype html>", page, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("Proton", page, StringComparison.Ordinal);
+
+        // La page se présente et interroge les API du moteur : c'est ce qui la
+        // distingue d'une page Web ordinaire.
+        Assert.Contains("/api/app", page, StringComparison.Ordinal);
+
+        // Aucune ressource externe : la page doit s'afficher sans réseau.
+        Assert.DoesNotContain("http://", page, StringComparison.Ordinal);
+        Assert.DoesNotContain("https://", page, StringComparison.Ordinal);
     }
 
     [Fact]
