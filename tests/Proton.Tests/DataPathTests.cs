@@ -5,8 +5,9 @@ namespace Proton.Tests;
 /// <summary>
 /// Confinement des chemins (§14, CA-10).
 ///
-/// C'est la seule barrière entre une application Web et le reste du disque. Ces
-/// tests couvrent les formes connues d'évasion plutôt que le seul cas nominal.
+/// Le confinement est une clôture d'API : il empêche une application de sortir de
+/// `data` par accident ou par un chemin mal formé. Ces tests couvrent les formes
+/// connues plutôt que le seul cas nominal.
 /// </summary>
 public sealed class DataPathTests : IDisposable
 {
@@ -117,50 +118,26 @@ public sealed class DataPathTests : IDisposable
     // --- Liens ---------------------------------------------------------------------
 
     [Fact]
-    public void Rejette_un_chemin_traversant_un_lien_qui_sort()
+    public void Un_lien_place_dans_data_est_suivi_deliberement()
     {
-        string dehors = Path.Combine(_root, "dehors");
-        Directory.CreateDirectory(dehors);
-        File.WriteAllText(Path.Combine(dehors, "secret.txt"), "confidentiel");
+        // L'API ne crée aucun lien : pour qu'il en existe un dans `data`, il faut que
+        // l'utilisateur ou un autre programme l'y ait placé — et l'un comme l'autre
+        // ont déjà accès au disque. Le refuser ne protégerait de rien, mais casserait
+        // un usage voulu : rediriger un sous-dossier volumineux vers un autre disque.
+        //
+        // Le confinement est une clôture d'API, non une barrière contre un adversaire
+        // (§14, §34).
+        string ailleurs = Path.Combine(_root, "autre-disque");
+        Directory.CreateDirectory(ailleurs);
+        File.WriteAllText(Path.Combine(ailleurs, "photo.jpg"), "données");
 
-        string lien = Path.Combine(_paths.Root, "evasion");
-        try
-        {
-            Directory.CreateSymbolicLink(lien, dehors);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // La création de liens exige des droits particuliers selon la
-            // configuration de Windows ; le cas ne peut alors pas être exercé.
-            return;
-        }
+        string lien = Path.Combine(_paths.Root, "photos");
+        Assert.True(TryCreateJunction(lien, ailleurs), "La jonction n'a pas pu être créée.");
 
-        // Le chemin est syntaxiquement irréprochable et reste, sur le papier, à
-        // l'intérieur de `data`. Seule la résolution du lien révèle l'évasion.
-        Assert.False(_paths.Resolve("/evasion/secret.txt").IsValid);
-        Assert.Equal(PathRejection.LinkEscape, _paths.Resolve("/evasion/secret.txt").Rejection);
-        Assert.False(_paths.Resolve("/evasion").IsValid);
-    }
+        DataPathResult resultat = _paths.Resolve("/photos/photo.jpg");
 
-    [Fact]
-    public void Rejette_un_chemin_traversant_une_jonction_qui_sort()
-    {
-        // Les jonctions se créent sans privilège particulier, contrairement aux liens
-        // symboliques : c'est donc le vecteur réaliste, et celui qui doit être couvert.
-        string dehors = Path.Combine(_root, "dehors-jonction");
-        Directory.CreateDirectory(dehors);
-        File.WriteAllText(Path.Combine(dehors, "confidentiel.txt"), "secret");
-
-        string lien = Path.Combine(_paths.Root, "jonction");
-        Assert.True(TryCreateJunction(lien, dehors), "La jonction n'a pas pu être créée.");
-
-        Assert.True(File.Exists(Path.Combine(lien, "confidentiel.txt")),
-            "La jonction devrait donner accès au fichier : sans cela le test ne prouve rien.");
-
-        DataPathResult resultat = _paths.Resolve("/jonction/confidentiel.txt");
-
-        Assert.False(resultat.IsValid);
-        Assert.Equal(PathRejection.LinkEscape, resultat.Rejection);
+        Assert.True(resultat.IsValid);
+        Assert.Equal("photos/photo.jpg", resultat.RelativePath);
     }
 
     /// <summary>Crée une jonction NTFS. Aucune API managée ne le permet directement.</summary>
@@ -178,27 +155,6 @@ public sealed class DataPathTests : IDisposable
 
         process.WaitForExit();
         return process.ExitCode == 0 && Directory.Exists(link);
-    }
-
-    [Fact]
-    public void Accepte_un_lien_qui_reste_a_l_interieur()
-    {
-        string cible = Path.Combine(_paths.Root, "reel");
-        Directory.CreateDirectory(cible);
-
-        string lien = Path.Combine(_paths.Root, "raccourci");
-        try
-        {
-            Directory.CreateSymbolicLink(lien, cible);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            return;
-        }
-
-        // Un lien interne ne fait sortir de nulle part : rien ne justifie de le
-        // refuser.
-        Assert.True(_paths.Resolve("/raccourci").IsValid);
     }
 
     // --- Nature de la ressource ----------------------------------------------------

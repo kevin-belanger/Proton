@@ -11,9 +11,7 @@ public enum PathRejection
     /// Le chemin contient un caractère que le système de fichiers n'accepte pas.
     InvalidCharacter,
     /// Le chemin normalisé sort du dossier `data`.
-    OutsideRoot,
-    /// Le chemin traverse un lien qui sort du dossier `data`.
-    LinkEscape
+    OutsideRoot
 }
 
 /// <summary>Chemin validé, ou motif du rejet.</summary>
@@ -42,19 +40,18 @@ public readonly record struct DataPathResult
 /// Confinement des chemins de l'API de fichiers (§14).
 ///
 /// Toute opération de <c>/data</c> doit rester à l'intérieur du dossier physique
-/// <c>data</c>. C'est la seule barrière entre une application Web et le reste du
-/// disque : une faiblesse ici annule tout le reste.
-///
-/// La validation procède en trois temps, chacun suffisant à lui seul dans la plupart
-/// des cas, mais aucun ne l'étant dans tous :
+/// <c>data</c>. La validation procède en deux temps :
 ///
 ///   1. rejet syntaxique des remontées, chemins absolus et caractères interdits;
-///   2. normalisation, puis vérification que le résultat appartient bien à `data`;
-///   3. vérification qu'aucun composant existant n'est un lien menant hors de `data`.
+///   2. normalisation, puis vérification que le résultat appartient bien à `data`.
 ///
-/// La troisième étape est indispensable : un lien placé dans `data` produirait un
-/// chemin parfaitement conforme aux deux premières, tout en donnant accès à un autre
-/// endroit du disque.
+/// Les liens ne sont volontairement pas résolus. L'API n'en crée aucun : pour qu'un
+/// lien existe dans <c>data</c>, il faut que l'utilisateur ou un autre programme l'y
+/// ait placé — et l'un comme l'autre disposent déjà d'un accès direct au disque. Le
+/// refuser ne protégerait donc de rien, mais empêcherait un usage délibéré, celui de
+/// rediriger un sous-dossier volumineux vers un autre disque.
+///
+/// Le confinement est une clôture d'API, non une barrière contre un adversaire (§34).
 /// </summary>
 public sealed class DataPath
 {
@@ -130,11 +127,6 @@ public sealed class DataPath
         if (!IsInsideRoot(candidate))
             return DataPathResult.Rejected(PathRejection.OutsideRoot);
 
-        // --- 3. Aucun lien ne doit mener hors de `data` -------------------------
-
-        if (EscapesThroughLink(candidate))
-            return DataPathResult.Rejected(PathRejection.LinkEscape);
-
         return new DataPathResult
         {
             IsValid = true,
@@ -154,53 +146,6 @@ public sealed class DataPath
         // Le séparateur est déterminant : « data-public » ne doit pas passer pour
         // un descendant de « data ».
         return fullPath.StartsWith(_root + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
-    }
-
-    /// <summary>
-    /// Remonte chaque composant du chemin, de la racine vers la cible, et vérifie
-    /// qu'aucun n'est un lien menant hors de <c>data</c>.
-    /// </summary>
-    /// <remarks>
-    /// Seuls les composants existants sont examinés : ceux qui restent à créer ne
-    /// peuvent rien détourner.
-    /// </remarks>
-    private bool EscapesThroughLink(string fullPath)
-    {
-        string current = fullPath;
-
-        while (current.Length > _root.Length)
-        {
-            FileSystemInfo? info = ResolveExistingLink(current);
-
-            if (info is not null && !IsInsideRoot(Path.TrimEndingDirectorySeparator(info.FullName)))
-                return true;
-
-            string? parent = Path.GetDirectoryName(current);
-            if (parent is null || parent == current)
-                break;
-
-            current = Path.TrimEndingDirectorySeparator(parent);
-        }
-
-        return false;
-    }
-
-    /// <summary>Cible finale d'un composant s'il s'agit d'un lien, sinon null.</summary>
-    private static FileSystemInfo? ResolveExistingLink(string path)
-    {
-        try
-        {
-            // Le type d'entrée n'est pas connu d'avance ; l'un des deux appels
-            // renseigne la cible, l'autre retourne null.
-            return File.ResolveLinkTarget(path, returnFinalTarget: true)
-                ?? Directory.ResolveLinkTarget(path, returnFinalTarget: true);
-        }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-        {
-            // Un lien dont la cible est inaccessible ne peut pas servir à sortir :
-            // l'accès échouera de toute façon.
-            return null;
-        }
     }
 
     /// Caractères refusés par le système de fichiers, complétés des séparateurs :

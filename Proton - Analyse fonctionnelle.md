@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 0.7
+**Version du document :** 0.8
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 0.8 — cadre de conception explicité (§3.4) : application locale, pas service exposé ; les liens ne sont plus résolus dans le confinement (§14.1).
 * 0.7 — dernières questions de l'exemple Todo réglées : ordonnancement des opérations mixtes (§59.1) et limites de taille par espace (§58.1).
 * 0.6 — comportement d'ouverture d'une pièce jointe arrêté (§51.2) ; traitement générique des échecs d'écriture (§17.1) et normalisation des noms documentée (§17.2) ; listing d'un dossier inexistant en 404 (§21).
 * 0.5 — gestion des dossiers spécifiée (§22) : barre oblique finale comme discriminant, création idempotente, suppression récursive explicite et ses précautions.
@@ -129,6 +130,32 @@ Les cas extrêmement anciens ou atypiques ne constituent pas une cible prioritai
 Les chemins utilisés par Proton doivent être déterminés relativement à l'emplacement réel de l'exécutable et non au répertoire de travail courant du processus.
 
 Une application complète doit donc pouvoir être déplacée d'un dossier à un autre sans modification.
+
+---
+
+## 3.4 Une application locale, pas un service exposé
+
+Proton sert à construire des applications de bureau. Le serveur HTTP n'est qu'un
+moyen d'atteindre l'application depuis la WebView : il n'écoute que la machine
+elle-même, ne sert qu'un seul utilisateur, et cet utilisateur a délibérément installé
+et lancé le programme.
+
+Ce cadre gouverne toutes les décisions de conception. **Les mécanismes propres aux
+serveurs exposés au public n'ont pas leur place ici** : pas de modèle adversaire, pas
+d'authentification, pas de quotas, pas de durcissement contre un attaquant distant.
+
+La distinction est celle-ci :
+
+| Protéger de | Pertinent ? |
+| --- | --- |
+| Une erreur de l'application — chemin mal formé, opération accidentelle | **Oui** — c'est la raison d'être du confinement |
+| Un programme hostile déjà installé sur la machine | **Non** — il dispose déjà d'un accès direct au disque |
+| Un attaquant distant | **Non** — le serveur n'écoute pas le réseau (§10) |
+
+Le confinement de `data`, la restriction à l'interface locale et les codes d'erreur
+existent pour rendre le comportement **prévisible**, pas pour résister à une
+agression. Toute protection dont le coût — en complexité, en performance, ou en
+usages légitimes empêchés — dépasse ce qu'elle évite réellement doit être écartée.
 
 ---
 
@@ -439,13 +466,13 @@ Une requête ne doit jamais pouvoir accéder à :
 
 ou à un chemin absolu externe.
 
-Les protections doivent inclure notamment :
+Les protections doivent inclure :
 
 * normalisation des chemins;
 * rejet des séquences de traversée;
-* rejet des chemins absolus;
-* vérification finale que le chemin résolu appartient bien à `data`;
-* protection contre les liens symboliques ou points de réanalyse permettant de sortir du dossier.
+* rejet des chemins absolus, des lettres de lecteur et des séparateurs Windows;
+* rejet des caractères que le système de fichiers n'accepte pas;
+* vérification finale que le chemin résolu appartient bien à `data`.
 
 Par exemple, une requête ressemblant à :
 
@@ -454,6 +481,26 @@ Par exemple, une requête ressemblant à :
 ```
 
 doit être refusée.
+
+## 14.1 Les liens ne sont pas résolus
+
+Un lien symbolique ou une jonction placés dans `data` sont **suivis normalement**.
+
+L'API ne permet d'en créer aucun. Pour qu'un lien existe dans `data`, il faut que
+l'utilisateur ou un autre programme l'y ait placé — et l'un comme l'autre disposent
+déjà d'un accès direct au disque. Les refuser ne protégerait donc de rien.
+
+Ils correspondent en revanche à un usage délibéré : rediriger un sous-dossier
+volumineux vers un autre disque. Le refus casserait cet usage sans contrepartie, et
+imposerait une résolution de lien sur chaque composant de chaque requête.
+
+Le confinement de `/data` est une **clôture d'API**, non une barrière contre un
+adversaire. Il empêche une application de sortir de `data` par accident ou par un
+chemin mal formé. Il ne prétend pas contenir un exécutable hostile, qui n'aurait de
+toute façon pas besoin de passer par Proton (§34).
+
+La suppression récursive constitue le seul cas particulier, traité en §22.4 : elle
+détruit, et ne doit donc jamais descendre à travers un lien.
 
 ---
 
@@ -812,11 +859,14 @@ la bornent.
 doit être refusé. Une application peut vider son espace de stockage entrée par
 entrée, mais pas faire disparaître sa racine.
 
-**Les points de réanalyse ne sont jamais suivis.** Un lien symbolique ou une jonction
-placés dans `data` sont supprimés en tant que liens ; leur cible n'est jamais
-parcourue. Sans cette règle, une jonction vers un dossier système transformerait une
-suppression de pièces jointes en destruction hors de `data`, en contournant tout le
-confinement du §14.
+**Les liens sont supprimés, jamais parcourus.** Un lien symbolique ou une jonction
+placés dans `data` sont retirés en tant que liens ; leur cible n'est pas touchée.
+
+C'est le seul endroit où les liens reçoivent un traitement particulier — ailleurs, ils
+sont suivis normalement (§14.1). La raison n'est pas la défiance mais l'irréversible :
+un utilisateur qui a redirigé `data/photos` vers un autre disque ne s'attend pas à ce
+que la suppression d'un dossier emporte ses photos. Supprimer le lien seul est ce
+qu'il a demandé ; descendre dedans serait une destruction qu'il n'a pas visée.
 
 **La descente doit être écrite explicitement.** La suppression récursive fournie par
 la bibliothèque standard de .NET ne convient pas : mise à l'épreuve sur un dossier
