@@ -192,13 +192,13 @@ tests de non-régression.
 
 ## 6. Zones non couvertes
 
-Les trois premières lignes ont été réglées en portant le prototype dans le moteur
+Les quatre premières lignes ont été réglées en portant le prototype dans le moteur
 (phase 6) ; elles sont conservées avec leur enseignement.
 
 | Sujet | État |
 | --- | --- |
 | Métadonnées `VERSIONINFO` (§42) | **Fait.** La ressource doit être écrite en langue **neutre** : le SDK y place déjà la sienne, et une seconde écrite en langue 1033 est ignorée par Windows au profit de la première. |
-| Icônes multi-résolutions | **Exercé** en 16+32. Une icône portant une image PNG de 256 pixels reste à valider. |
+| Icônes multi-résolutions | **Validé.** Exercé sur une icône de 9 résolutions, de 16 à 256 pixels — cette dernière encodée en PNG et déclarée « 0×0 » selon la convention du format ICO. Les images sont recopiées telles quelles, sans réencodage. |
 | Cible en cours d'exécution | **Fait.** Le cas est détecté et traduit en message explicite plutôt qu'en « Access to the path is denied ». |
 | Signature Authenticode (§45) | Le recollage invalide toute signature du moteur. Conforme à l'analyse : l'enfant est non signé jusqu'à nouvelle signature. |
 | `ReadyToRun`, trimming, win-arm64 | Non exercés. Le trimming en particulier modifie le nombre d'entrées du bundle — à revalider s'il est activé. |

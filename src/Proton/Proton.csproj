@@ -13,6 +13,7 @@
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <RootNamespace>Proton</RootNamespace>
     <AssemblyName>Proton</AssemblyName>
+    <ApplicationIcon>Proton.ico</ApplicationIcon>
   </PropertyGroup>
 
   <!-- Identité par défaut du moteur générique. Un exécutable produit par le mode
