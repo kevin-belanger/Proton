@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 1.1
+**Version du document :** 1.2
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 1.2 — §41 complété : la fenêtre doit recevoir l'icône de l'exécutable, Windows Forms ne la reprenant pas seule.
 * 1.1 — §51.2 implémenté : une pièce jointe est téléchargée puis ouverte avec l'application associée, au lieu d'être confiée au navigateur.
 * 1.0 — les sept phases sont implémentées ; état des critères d'acceptation relevé en §65.1.
 * 0.10 — journal de diagnostic précisé (§56.1) et filets contre les erreurs non gérées (§56.2).
@@ -1452,6 +1453,19 @@ Le générateur doit intégrer cette icône dans le nouvel exécutable de maniè
 * dans la barre des tâches;
 * dans la fenêtre;
 * dans les propriétés pertinentes du fichier.
+
+Les deux derniers emplacements demandent une action de la fenêtre : Windows Forms
+n'utilise pas l'icône de l'exécutable de lui-même, et affiche celle du framework tant
+qu'aucune autre ne lui est assignée.
+
+Elle doit lui être fournie par sa propriété `Icon`, et non par un message envoyé à son
+handle : Windows Forms applique la sienne après la création du handle, et écraserait
+le message.
+
+La fenêtre reçoit l'icône de taille standard. Windows la réduit pour la barre de
+titre ; les variantes de petite taille que porterait le fichier ICO ne sont donc pas
+employées telles quelles — ce qui reste sans conséquence visible dans la plupart des
+cas.
 
 ---
 

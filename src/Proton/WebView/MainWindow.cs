@@ -36,6 +36,10 @@ public sealed class MainWindow : Form
             MaximizeBox = false;
         }
 
+        // L'icône que porte l'exécutable, pour la barre de titre et la barre des
+        // tâches (§41).
+        Icon = WindowIcon.Load();
+
         _webView = new WebView2 { Dock = DockStyle.Fill };
         Controls.Add(_webView);
     }
