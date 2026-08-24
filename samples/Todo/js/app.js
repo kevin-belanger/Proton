@@ -192,17 +192,10 @@ async function retirerPieceJointe(id, nom) {
 }
 
 async function supprimerTache(id) {
-    // Aucune suppression récursive implicite n'existe (§22) : les pièces jointes
-    // doivent être retirées une par une avant le dossier lui-même.
-    try {
-        const fichiers = await Proton.fichiers.lister(dossierPiecesJointes(id));
-        for (const fichier of fichiers) {
-            await Proton.fichiers.supprimer(`${dossierPiecesJointes(id)}/${fichier.name}`);
-        }
-        await Proton.fichiers.supprimer(dossierPiecesJointes(id));
-    } catch (e) {
-        if (e.status !== 404) throw e;
-    }
+    // Le dossier de pièces jointes part d'un coup, contenu compris (§22.3). La
+    // récursion est demandée explicitement : sans ce paramètre, un dossier non vide
+    // serait refusé.
+    await Proton.fichiers.supprimerDossier(dossierPiecesJointes(id), { recursif: true });
 
     await base.execute('DELETE FROM taches WHERE id = $id', { $id: id });
     await rafraichir();

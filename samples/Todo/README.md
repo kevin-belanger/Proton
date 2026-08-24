@@ -64,15 +64,22 @@ réglé le problème en interdisant au passage l'affichage d'un document dans un
 Le paramètre facultatif `?download=1` (§15.1) reste disponible pour l'application qui
 veut explicitement un téléchargement.
 
-## 2. Supprimer une tâche coûte N+2 requêtes
+## 2. Supprimer une tâche coûtait N+2 requêtes — **tranché**
 
-§22 exclut toute suppression récursive implicite. Retirer une tâche portant cinq
-pièces jointes demande donc : un listing, cinq suppressions, puis la suppression du
-dossier — sept allers-retours pour une opération banale, et rien n'est atomique.
-Une interruption au milieu laisse des fichiers orphelins.
+Retirer une tâche portant cinq pièces jointes demandait un listing, cinq
+suppressions, puis la suppression du dossier : sept allers-retours pour une opération
+banale, dont aucun n'était atomique. Une interruption au milieu laissait des fichiers
+orphelins.
 
-§22 envisage une extension récursive explicite « si elle demeure simple et sûre ».
-L'usage montre qu'elle est nécessaire, pas seulement souhaitable.
+**Décision (§22.3) :** la suppression récursive d'un dossier existe, sur demande
+explicite. `supprimerTache` tient désormais en une seule requête.
+
+La récursion reste **opt-in** : sans le paramètre, un dossier non vide est refusé par
+`409`. La destruction d'un contenu ne peut jamais résulter d'un oubli.
+
+Écarté : la suppression de plusieurs fichiers en une requête (§22.5). Sur un serveur
+local, une requête par fichier ne coûte rien, et une opération groupée soulèverait
+des questions de résultat partiel qui ne se posent pas ici.
 
 ## 3. Que répond le listing d'un dossier inexistant ?
 
@@ -81,6 +88,10 @@ retourner `404`, ou une liste vide ? §21 ne le dit pas.
 
 L'exemple suppose `404` et traite ce cas comme « aucune pièce jointe ». Une liste
 vide serait plus commode et éviterait de traiter une erreur comme un cas normal.
+
+> §22.1 a réglé la question voisine : la barre oblique finale distingue désormais un
+> fichier d'un dossier, sur toutes les méthodes. Reste à décider ce que répond le
+> listing d'un dossier qui n'existe pas.
 
 ## 4. Rien n'indique qu'un fichier a été remplacé
 

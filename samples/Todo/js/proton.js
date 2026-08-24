@@ -45,6 +45,24 @@ const Proton = {
             if (!reponse.ok && reponse.status !== 404) throw await erreur(reponse);
         },
 
+        /** Crée un dossier, parents compris. La barre oblique finale le désigne (§22.2). */
+        async creerDossier(chemin) {
+            const reponse = await fetch('/data/' + normaliser(chemin) + '/', { method: 'PUT' });
+            if (!reponse.ok) throw await erreur(reponse);
+        },
+
+        /**
+         * Supprime un dossier (§22.3).
+         *
+         * Sans `recursif`, un dossier non vide est refusé par `409` : la destruction
+         * du contenu ne peut jamais résulter d'un oubli.
+         */
+        async supprimerDossier(chemin, { recursif = false } = {}) {
+            const url = '/data/' + normaliser(chemin) + '/' + (recursif ? '?recursive=1' : '');
+            const reponse = await fetch(url, { method: 'DELETE' });
+            if (!reponse.ok && reponse.status !== 404) throw await erreur(reponse);
+        },
+
         /** URL directe d'un fichier, utilisable dans un <a href> ou un <img src>. */
         url(chemin) {
             return '/data/' + normaliser(chemin);

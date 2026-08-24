@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 0.4
+**Version du document :** 0.5
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 0.5 — gestion des dossiers spécifiée (§22) : barre oblique finale comme discriminant, création idempotente, suppression récursive explicite et ses précautions.
 * 0.4 — navigation vers les espaces réservés interdite (§51.1) et téléchargement explicite (§15.1), à la suite de l'exemple `samples/Todo`.
 * 0.3 — périmètre V1 resserré : ajout de l'API d'application (§24.1) ; report du
   contrôle de concurrence sur les fichiers (§16 à §20) et de la restriction d'origine
@@ -676,15 +677,108 @@ empreinte du contenu n'est calculée, ni lors d'un listing, ni lors d'une lectur
 
 # 22. Dossiers dans `data`
 
-La V1 devrait permettre au minimum :
+Une application doit pouvoir créer et supprimer des dossiers aussi simplement que des
+fichiers.
 
-* de lister un dossier;
-* de créer les dossiers parents nécessaires lors de la création d'un fichier;
-* de supprimer un dossier vide.
+## 22.1 La barre oblique finale désigne un dossier
 
-Une extension permettant explicitement la création et la suppression récursive de dossiers peut être ajoutée si elle demeure simple et sûre.
+C'est elle qui distingue les deux natures de ressource, sur toutes les méthodes :
 
-Aucune suppression récursive implicite ne doit être effectuée sans requête explicite.
+| Requête | Effet |
+| --- | --- |
+| `GET /data/notes` | Lit le fichier `notes` |
+| `GET /data/notes/` | Liste le dossier `notes` (§21) |
+| `PUT /data/notes` | Crée ou remplace le fichier `notes` |
+| `PUT /data/notes/` | Crée le dossier `notes` |
+| `DELETE /data/notes` | Supprime le fichier `notes` |
+| `DELETE /data/notes/` | Supprime le dossier `notes` |
+
+Lorsqu'un chemin sans barre oblique finale désigne en réalité un dossier existant,
+une lecture retourne :
+
+```http
+301 Moved Permanently
+Location: /data/notes/
+```
+
+Cette convention lève l'ambiguïté sans introduire de méthode HTTP ni de route
+particulière.
+
+## 22.2 Création
+
+```http
+PUT /data/rapports/2026/
+```
+
+Les dossiers parents manquants sont créés au passage. La réponse est `201 Created`,
+ou `204 No Content` si le dossier existait déjà — la création est donc idempotente.
+
+Les dossiers parents nécessaires à l'écriture d'un fichier continuent d'être créés
+implicitement : `PUT /data/rapports/2026/mars.pdf` fonctionne sans création préalable.
+
+## 22.3 Suppression
+
+Par défaut, seul un dossier vide peut être supprimé :
+
+```http
+DELETE /data/rapports/
+```
+
+Si le dossier n'est pas vide, Proton refuse :
+
+```http
+409 Conflict
+```
+
+```json
+{
+  "error": {
+    "code": "directory_not_empty",
+    "message": "The directory is not empty."
+  }
+}
+```
+
+La suppression d'un dossier et de tout son contenu doit être **demandée
+explicitement** :
+
+```http
+DELETE /data/rapports/?recursive=1
+```
+
+Aucune récursion implicite n'est jamais effectuée. Une application qui omet le
+paramètre ne peut pas détruire de données par accident.
+
+## 22.4 Précautions impératives
+
+La suppression récursive est l'opération la plus destructrice de l'API. Trois règles
+la bornent.
+
+**Le dossier `data` lui-même ne peut pas être supprimé.** `DELETE /data/?recursive=1`
+doit être refusé. Une application peut vider son espace de stockage entrée par
+entrée, mais pas faire disparaître sa racine.
+
+**Les points de réanalyse ne sont jamais suivis.** Un lien symbolique ou une jonction
+placés dans `data` sont supprimés en tant que liens ; leur cible n'est jamais
+parcourue. Sans cette règle, une jonction vers un dossier système transformerait une
+suppression de pièces jointes en destruction hors de `data`, en contournant tout le
+confinement du §14.
+
+**La descente doit être écrite explicitement.** La suppression récursive fournie par
+la bibliothèque standard de .NET ne convient pas : mise à l'épreuve sur un dossier
+contenant une jonction, elle supprime les fichiers, supprime le lien, puis échoue sur
+`UnauthorizedAccessException` en laissant le dossier en place. Le résultat est un
+état partiel accompagné d'une erreur — comportement reproduit trois fois sur trois.
+Proton doit donc parcourir l'arborescence lui-même, en vérifiant chaque entrée.
+
+> La cible du lien, elle, survit bien à cette opération : le confinement n'est pas en
+> cause, seule la fiabilité de la suppression l'est.
+
+## 22.5 Hors périmètre V1
+
+La suppression de plusieurs fichiers en une seule requête n'est pas retenue. Sur un
+serveur local, le coût d'une requête par fichier est négligeable, et une opération
+groupée soulèverait des questions de résultat partiel qui ne se posent pas ici.
 
 ---
 
@@ -2220,6 +2314,7 @@ avec :
 * `ETag` faible et `Last-Modified`, pour la validation de cache;
 * écriture atomique;
 * `?download=1` (§15.1);
+* création et suppression de dossiers, récursion explicite comprise (§22);
 * codes HTTP;
 * format d'erreur uniforme.
 
