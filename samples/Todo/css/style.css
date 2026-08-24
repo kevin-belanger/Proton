@@ -1,0 +1,185 @@
+:root {
+    color-scheme: light dark;
+    --fond: #fbfbfd;
+    --carte: #ffffff;
+    --texte: #1c1c1e;
+    --discret: #6b6b70;
+    --trait: #e4e4e8;
+    --accent: #3b6ef0;
+    --accent-texte: #ffffff;
+    --alerte-fond: #fff8e6;
+    --alerte-trait: #f0d9a0;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --fond: #1c1c1e;
+        --carte: #252528;
+        --texte: #f5f5f7;
+        --discret: #9a9aa0;
+        --trait: #38383c;
+        --accent: #6f9bff;
+        --accent-texte: #10131a;
+        --alerte-fond: #2e2717;
+        --alerte-trait: #5a4a24;
+    }
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 2.5rem 1.5rem 4rem;
+    background: var(--fond);
+    color: var(--texte);
+    font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    display: flex;
+    justify-content: center;
+}
+
+main { width: 100%; max-width: 38rem; }
+
+h1 {
+    margin: 0;
+    font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+    font-size: 2rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+.version { margin: 0.15rem 0 0; color: var(--discret); font-size: 0.85rem; }
+.intro { margin: 1rem 0 2rem; color: var(--discret); }
+.meta { color: var(--discret); font-size: 0.8rem; }
+
+/* --- Saisie --- */
+
+form { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; }
+
+input[type="text"] {
+    flex: 1;
+    padding: 0.6rem 0.8rem;
+    background: var(--carte);
+    color: inherit;
+    border: 1px solid var(--trait);
+    border-radius: 8px;
+    font: inherit;
+}
+
+input[type="text"]:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+    border-color: transparent;
+}
+
+.bouton {
+    padding: 0.6rem 1rem;
+    background: var(--accent);
+    color: var(--accent-texte);
+    border: none;
+    border-radius: 8px;
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.bouton.discret {
+    padding: 0.25rem 0.55rem;
+    background: none;
+    color: var(--discret);
+    border: 1px solid var(--trait);
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+
+.bouton.discret:hover { color: var(--texte); border-color: var(--discret); }
+
+/* Le champ de fichier est piloté par son étiquette. */
+.fichier { display: none; }
+
+/* --- Liste --- */
+
+ul { list-style: none; margin: 0; padding: 0; }
+
+.vide {
+    padding: 2.5rem 0;
+    text-align: center;
+    color: var(--discret);
+}
+
+.tache {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 0;
+    border-bottom: 1px solid var(--trait);
+}
+
+.tache:last-child { border-bottom: none; }
+
+.tache input[type="checkbox"] {
+    margin: 0.3rem 0 0;
+    width: 1.05rem;
+    height: 1.05rem;
+    accent-color: var(--accent);
+    flex: none;
+}
+
+.corps { flex: 1; min-width: 0; }
+.note { display: block; overflow-wrap: anywhere; }
+.corps .meta { display: block; margin-top: 0.1rem; }
+
+.terminee .note { text-decoration: line-through; color: var(--discret); }
+
+.actions { display: flex; gap: 0.4rem; flex: none; }
+
+/* --- Pièces jointes --- */
+
+.pieces { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.5rem; }
+.pieces:empty { display: none; }
+
+.piece {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.3rem 0.15rem 0.55rem;
+    background: var(--carte);
+    border: 1px solid var(--trait);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    max-width: 100%;
+}
+
+.piece a {
+    color: var(--accent);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.piece a:hover { text-decoration: underline; }
+
+.retirer {
+    background: none;
+    border: none;
+    color: var(--discret);
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 0 0.15rem;
+}
+
+.retirer:hover { color: var(--texte); }
+
+/* --- Avertissement --- */
+
+.avertissement {
+    padding: 1.25rem;
+    background: var(--alerte-fond);
+    border: 1px solid var(--alerte-trait);
+    border-radius: 10px;
+}
+
+.avertissement p { margin: 0.5rem 0 0; }
