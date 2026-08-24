@@ -177,12 +177,24 @@ async function basculer(id, terminee) {
 }
 
 async function televerser(id, fichiers) {
+    const remplaces = [];
+
     for (const fichier of fichiers) {
         // Le corps de la requête est le fichier lui-même : Proton écrit les octets
         // tels quels, sans encodage intermédiaire (§17).
-        await Proton.fichiers.ecrire(
-            `${dossierPiecesJointes(id)}/${assainir(fichier.name)}`, fichier);
+        const nom = assainir(fichier.name);
+        const { cree } = await Proton.fichiers.ecrire(
+            `${dossierPiecesJointes(id)}/${nom}`, fichier);
+
+        if (!cree) remplaces.push(nom);
     }
+
+    // Un fichier de même nom est écrasé sans que l'API ne s'y oppose (§16).
+    // Le code de retour est le seul moyen d'en avertir l'utilisateur.
+    if (remplaces.length > 0) {
+        alert('Pièce jointe remplacée : ' + remplaces.join(', '));
+    }
+
     await rafraichir();
 }
 

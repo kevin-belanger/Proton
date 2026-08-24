@@ -30,6 +30,10 @@ const Proton = {
         /**
          * Crée ou remplace un fichier (§17). Le corps est le contenu lui-même :
          * une chaîne, un Blob ou un File issu d'un <input type="file">.
+         *
+         * Retourne `{ cree }` : `false` signale qu'un fichier existant a été
+         * remplacé. C'est le seul avertissement d'écrasement que fournit l'API
+         * (§19) — l'ignorer, c'est écraser en silence.
          */
         async ecrire(chemin, contenu) {
             const reponse = await fetch('/data/' + normaliser(chemin), {
@@ -37,6 +41,7 @@ const Proton = {
                 body: contenu
             });
             if (!reponse.ok) throw await erreur(reponse);
+            return { cree: reponse.status === 201 };
         },
 
         /** Supprime un fichier (§20). */

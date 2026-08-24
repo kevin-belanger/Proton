@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 0.6
+**Version du document :** 0.7
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 0.7 — dernières questions de l'exemple Todo réglées : ordonnancement des opérations mixtes (§59.1) et limites de taille par espace (§58.1).
 * 0.6 — comportement d'ouverture d'une pièce jointe arrêté (§51.2) ; traitement générique des échecs d'écriture (§17.1) et normalisation des noms documentée (§17.2) ; listing d'un dossier inexistant en 404 (§21).
 * 0.5 — gestion des dossiers spécifiée (§22) : barre oblique finale comme discriminant, création idempotente, suppression récursive explicite et ses précautions.
 * 0.4 — navigation vers les espaces réservés interdite (§51.1) et téléchargement explicite (§15.1), à la suite de l'exemple `samples/Todo`.
@@ -1854,6 +1855,27 @@ Un fichier volumineux ne doit pas nécessairement être chargé intégralement p
 En lecture comme en écriture, le contenu devrait transiter par flux plutôt que par un
 tampon complet en mémoire.
 
+## 58.1 Limite de taille des requêtes
+
+Kestrel plafonne par défaut le corps d'une requête à 30 000 000 octets. Cette limite
+protège un serveur exposé au public ; elle n'a pas lieu d'être ici, où le serveur
+n'écoute que la machine elle-même. Joindre une vidéo à une fiche est un usage
+parfaitement légitime.
+
+La limite est donc levée **là où le contenu transite par flux**, et maintenue là où
+il doit être chargé en mémoire :
+
+| Espace | Limite | Raison |
+| --- | --- | --- |
+| `/data` | aucune | Le contenu est écrit directement sur le disque, sans s'accumuler en mémoire |
+| `/api` | 32 Mo | Un corps JSON est désérialisé en mémoire avant d'être exécuté |
+
+Une requête `/api` dépassant la limite doit répondre `413` au format uniforme de §24,
+et non l'erreur brute du serveur.
+
+Aucune limite n'est nécessaire sur `/data` : le disque plein constitue la borne
+naturelle, et §17.1 traite déjà cet échec.
+
 ---
 
 # 59. Atomicité de l'écriture
@@ -1876,6 +1898,31 @@ Une stratégie adaptée consiste à :
 ```
 
 Cela réduit le risque qu'un arrêt au milieu de l'écriture laisse un fichier partiellement écrit.
+
+## 59.1 Aucune transaction ne couvre à la fois les fichiers et les bases
+
+Une opération applicative touche souvent les deux mondes : supprimer une fiche, c'est
+retirer une ligne d'une base **et** des fichiers de `data`. Les transactions de §32 ne
+garantissent l'atomicité qu'à l'intérieur d'une base.
+
+Proton ne fournit donc **aucune garantie transversale**, et n'en fournira pas : une
+transaction distribuée entre SQLite et le système de fichiers serait hors de
+proportion avec le périmètre de la V1.
+
+Il revient à l'application de composer ses opérations. La règle utile ne consiste pas
+à empêcher l'échec, mais à choisir **de quel côté il retombe** :
+
+| Ordre retenu | En cas d'interruption |
+| --- | --- |
+| Supprimer la ligne, puis les fichiers | Fichiers orphelins **invisibles** : plus rien ne signale leur existence |
+| Supprimer les fichiers, puis la ligne | La fiche subsiste, l'utilisateur recommence — **réparable** |
+
+Symétriquement, à la création : enregistrer la ligne d'abord, écrire les fichiers
+ensuite. Une fiche sans pièce jointe se corrige ; une pièce jointe sans fiche est
+introuvable.
+
+Le principe : **orienter les échecs vers un excès de données plutôt que vers des
+données invisibles.** Ce qui reste visible peut être réparé.
 
 ---
 

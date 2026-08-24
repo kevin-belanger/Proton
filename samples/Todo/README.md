@@ -41,8 +41,8 @@ idée de ce que serait une bibliothèque officielle si elle voyait le jour.
 # Ce que cet exercice a révélé
 
 Écrire cette application avant les API a mis au jour sept questions que la
-spécification ne tranchait pas. Quatre sont réglées ; trois restent à décider en
-phase 3.
+spécification ne tranchait pas. Toutes sont désormais réglées, et chacune a laissé
+une trace dans l'analyse.
 
 ## 1. Ouvrir une pièce jointe remplacerait l'application — **tranché**
 
@@ -93,24 +93,42 @@ traite ce `404` comme « aucune pièce jointe ».
 §22.1 avait réglé la question voisine : la barre oblique finale distingue un fichier
 d'un dossier sur toutes les méthodes.
 
-## 4. Rien n'indique qu'un fichier a été remplacé
+## 4. Rien n’indique qu’un fichier a été remplacé — **tranché**
 
 §19 distingue `201` (créé) de `204` (remplacé) : l'information existe donc, mais
 elle se perd si la couche d'accès ne la remonte pas. Téléverser deux fois le même
 nom écrase silencieusement le premier fichier.
 
-À trancher : est-ce à l'application de prévenir, ou faut-il un moyen de refuser
-l'écrasement ?
+**Décision : rien à ajouter à l'API.** §19 distingue déjà `201 Created` de
+`204 No Content` : après un `PUT`, l'application sait si elle a créé ou remplacé.
 
-## 5. Aucune transaction ne couvre fichiers et base
+Ce qui manquait était dans la couche d'accès, qui avalait ce code de retour.
+`Proton.fichiers.ecrire` retourne désormais `{ cree }`, et l'exemple avertit quand
+une pièce jointe en a écrasé une autre.
+
+Écarté : un moyen de refuser l'écrasement, tel que `If-None-Match: *`. Ce serait
+réintroduire une précondition par la petite porte, la complexité même écartée en §16.
+Rien n'empêchera de l'ajouter le jour où le besoin se manifestera.
+
+## 5. Aucune transaction ne couvre fichiers et base — **tranché**
 
 Supprimer une tâche touche deux mondes : des lignes SQLite et des fichiers. §32 ne
 garantit l'atomicité qu'à l'intérieur d'une base. Une panne entre les deux laisse
 un état incohérent.
 
-C'est inhérent à l'architecture et probablement acceptable en V1, mais cela doit
-être **écrit** : un développeur d'application doit savoir qu'il lui revient de
-gérer ces orphelins.
+**Décision (§59.1) : la limite est assumée, avec une règle d'ordonnancement.**
+
+Proton ne fournira aucune garantie transversale — une transaction distribuée entre
+SQLite et le système de fichiers serait hors de proportion. En revanche, l'ordre des
+opérations décide de quel côté l'échec retombe :
+
+| Ordre | En cas d'interruption |
+| --- | --- |
+| Ligne d'abord, puis fichiers | Fichiers orphelins **invisibles** |
+| Fichiers d'abord, puis ligne | La fiche subsiste, réparable |
+
+`supprimerTache` applique déjà cette règle : le dossier de pièces jointes part avant
+la ligne en base.
 
 ## 6. Noms de fichiers — **tranché**
 
@@ -129,7 +147,18 @@ Un cas résiduel est documenté plutôt que codé (§17.2) : un nom terminé par
 ou une espace est normalisé par Windows. Il ne provoque ni erreur ni perte d'accès,
 mais le nom retourné par le listing fait foi.
 
-## 7. Reste ouvert — taille des requêtes
+
+## 7. Taille des requêtes — **tranché**
 
 Joindre une vidéo dépasserait la limite par défaut de Kestrel et produirait une
 erreur brute, hors du format uniforme de §24.
+
+**Décision (§58.1) : la limite est levée sur `/data`, maintenue sur `/api`.**
+
+| Espace | Limite | Raison |
+| --- | --- | --- |
+| `/data` | aucune | Le contenu transite par flux vers le disque |
+| `/api` | 32 Mo | Un corps JSON est désérialisé en mémoire |
+
+Joindre une vidéo devient donc possible. Le disque plein reste la borne naturelle, et
+§17.1 traite cet échec comme les autres.
