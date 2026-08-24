@@ -26,6 +26,9 @@ Ni installateur, ni serveur, ni runtime à installer séparément.
 technique principal — la génération d'exécutables personnalisés — a été levé par un
 prototype.
 
+Le périmètre de la V1 est arrêté : voir [docs/02-perimetre-v1.md](docs/02-perimetre-v1.md)
+pour les simplifications assumées et leurs conditions de révision.
+
 ---
 
 ## Documents

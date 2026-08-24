@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 0.2
+**Version du document :** 0.3
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,9 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 0.3 — périmètre V1 resserré : ajout de l'API d'application (§24.1) ; report du
+  contrôle de concurrence sur les fichiers (§16 à §20) et de la restriction d'origine
+  (§52) ; §57 à §60, CA-05 à CA-09 et la phase 3 ajustés en conséquence.
 * 0.2 — questions de la §67 relatives à la personnalisation de l'exécutable tranchées
   par le prototype `config-pe` ; §39 et phase 7 précisées en conséquence.
 * 0.1 — version initiale.
@@ -466,42 +469,54 @@ Exemple :
 ```http
 HTTP/1.1 200 OK
 Content-Type: application/json
-ETag: "sha256-..."
+ETag: "6a1f-1a2b3c4d"
+Last-Modified: Mon, 24 Aug 2026 14:32:00 GMT
 ```
 
 Le type MIME doit être déterminé lorsque cela est raisonnablement possible.
 
 Le contenu reste le contenu original du fichier.
 
-Il n'est pas nécessaire d'envelopper le fichier dans une structure JSON simplement pour transmettre son hash.
+Il n'est pas nécessaire d'envelopper le fichier dans une structure JSON simplement pour transmettre ses métadonnées.
+
+L'`ETag` retourné est un **validateur de cache**, dérivé de la taille et de la date de
+modification du fichier. Il permet à la WebView de réémettre une requête conditionnelle
+`If-None-Match` et de recevoir `304 Not Modified` lorsque le fichier n'a pas changé.
+
+Il ne constitue pas un mécanisme de contrôle de concurrence : voir §16.
 
 ---
 
-# 16. Hash et contrôle de concurrence
+# 16. Concurrence sur les fichiers — reportée après la V1
 
-Chaque lecture d'un fichier doit calculer une empreinte permettant d'identifier précisément la version du fichier.
+La V1 **ne fournit pas** de mécanisme de contrôle de concurrence sur les fichiers de
+`data`.
 
-La V1 utilisera :
+Une application Proton est une application de bureau locale, exécutée en une seule
+instance, dont les écritures proviennent d'une seule page. Le risque que deux écrivains
+se disputent le même fichier est marginal, et le coût d'un mécanisme correct ne se
+justifie pas au stade du MVP.
 
-```text
-SHA-256
-```
+Concrètement :
 
-L'empreinte sera retournée sous forme d'un `ETag` HTTP fort.
+* aucune empreinte SHA-256 n'est calculée à la lecture;
+* l'en-tête `If-Match` n'est pas interprété;
+* le code `412 Precondition Failed` n'est pas émis par l'API de fichiers;
+* une écriture remplace inconditionnellement le fichier visé.
 
-Exemple conceptuel :
+L'`ETag` faible décrit en §15 subsiste, mais comme validateur de cache uniquement.
 
-```http
-ETag: "sha256-a847...91c"
-```
+L'atomicité de l'écriture elle-même demeure exigée : voir §59.
 
-Cela permettra à l'application Web de savoir exactement quelle version du fichier elle vient de lire.
+> **Décision datée du 2026-08-24.** Ce report est un choix assumé, non un oubli.
+> Les conditions de sa révision et la façon de réintroduire le mécanisme sans
+> réécriture figurent dans `docs/02-perimetre-v1.md`.
 
 ---
 
-# 17. Écriture conditionnelle d'un fichier
+# 17. Écriture d'un fichier
 
-Une application peut remplacer ou créer un fichier avec :
+Une application remplace ou crée un fichier avec :
 
 ```http
 PUT /data/settings.json
@@ -509,70 +524,35 @@ PUT /data/settings.json
 
 Le corps HTTP contient directement le nouveau contenu.
 
-Une application peut effectuer une écriture inconditionnelle :
-
-```http
-PUT /data/settings.json
-```
-
-ou transmettre la version qu'elle pense modifier :
-
-```http
-PUT /data/settings.json
-If-Match: "sha256-a847...91c"
-```
-
-Lorsque `If-Match` est présent, Proton doit :
-
-1. calculer le hash actuel du fichier;
-2. comparer ce hash à celui fourni;
-3. effectuer l'écriture uniquement si les deux correspondent.
-
-Si les valeurs diffèrent, Proton ne doit pas toucher au fichier.
-
-La réponse doit être :
-
-```http
-412 Precondition Failed
-```
-
-Cela constitue un mécanisme de concurrence optimiste.
+L'écriture est inconditionnelle. Aucun en-tête de précondition n'est requis, et un
+`If-Match` éventuellement transmis est ignoré par la V1.
 
 ---
 
-# 18. Exemple de concurrence
+# 18. Comportement en cas d'écritures simultanées
 
-Application A lit :
+En l'absence de contrôle de concurrence (§16), deux écritures simultanées sur le même
+fichier se résolvent par « le dernier écrivain gagne ».
 
-```text
-settings.json
-ETag = ABC
-```
-
-Application B modifie ensuite le même fichier.
-
-Le fichier possède maintenant :
+Application A écrit :
 
 ```text
-ETag = XYZ
+settings.json ← version A
 ```
 
-Application A tente :
-
-```http
-PUT /data/settings.json
-If-Match: ABC
-```
-
-Proton détecte :
+Application B écrit ensuite :
 
 ```text
-ABC != XYZ
+settings.json ← version B
 ```
 
-L'écriture est rejetée.
+Le fichier contient la version B. La version A est perdue, sans erreur signalée.
 
-Ainsi, l'application A ne peut pas écraser silencieusement les modifications de B.
+En revanche, grâce à l'écriture atomique exigée en §59, le fichier contient toujours
+**l'une ou l'autre** des deux versions complètes, jamais un mélange des deux.
+
+C'est le comportement attendu de la V1. Il doit être documenté comme tel à l'intention
+des développeurs d'applications Proton.
 
 ---
 
@@ -600,7 +580,8 @@ Si le fichier existe et est remplacé :
 
 peut être retourné.
 
-Le nouvel `ETag` devrait être retourné dans les en-têtes de la réponse lorsqu'il est disponible.
+Le nouvel `ETag` faible (§15) devrait être retourné dans les en-têtes de la réponse
+lorsqu'il est disponible.
 
 ---
 
@@ -612,29 +593,19 @@ Exemple :
 DELETE /data/document.txt
 ```
 
-Sans `If-Match`, la suppression est inconditionnelle.
-
-Avec :
-
-```http
-DELETE /data/document.txt
-If-Match: "sha256-..."
-```
-
-Proton doit vérifier la version avant la suppression.
-
-Si le fichier a changé :
-
-```http
-412 Precondition Failed
-```
-
-doit être retourné.
+La suppression est inconditionnelle. Comme pour l'écriture (§17), un `If-Match`
+éventuellement transmis est ignoré par la V1.
 
 Une suppression réussie peut retourner :
 
 ```http
 204 No Content
+```
+
+La suppression d'un fichier inexistant retourne :
+
+```http
+404 Not Found
 ```
 
 ---
@@ -677,9 +648,8 @@ Exemple conceptuel :
 }
 ```
 
-Le calcul systématique du SHA-256 de tous les fichiers d'un répertoire n'est pas requis lors d'un simple listing.
-
-Le hash doit être calculé lorsqu'un fichier est réellement lu ou lorsqu'une opération conditionnelle le nécessite.
+Le listing ne retourne que des métadonnées déjà connues du système de fichiers. Aucune
+empreinte du contenu n'est calculée, ni lors d'un listing, ni lors d'une lecture (§16).
 
 ---
 
@@ -712,7 +682,7 @@ Exemples :
 | `403` | Accès interdit                                      |
 | `404` | Ressource introuvable                               |
 | `409` | Conflit de ressource                                |
-| `412` | Précondition `If-Match` non satisfaite              |
+| `412` | Réservé — non émis par la V1, voir §16              |
 | `413` | Contenu trop volumineux si une limite est appliquée |
 | `422` | Requête valide mais impossible à traiter            |
 | `500` | Erreur interne                                      |
@@ -750,6 +720,65 @@ Des détails supplémentaires peuvent être ajoutés :
 ```
 
 Les codes internes doivent être stables afin qu'une application JavaScript puisse les interpréter sans analyser le texte humain du message.
+
+---
+
+# 24.1 API d'application
+
+L'exécutable personnalisé connaît son nom, son titre et sa version (§39, §40). Sans une
+route dédiée, l'application Web n'aurait aucun moyen de lire ces valeurs et devrait les
+dupliquer dans son propre code, avec la dérive qui s'ensuit.
+
+Proton doit donc exposer sa configuration embarquée en lecture seule :
+
+```http
+GET /api/app
+```
+
+Réponse :
+
+```json
+{
+  "name": "Gestion Inventaire",
+  "windowTitle": "Gestion Inventaire — Édition 2026",
+  "version": "2.4.1",
+  "company": "Atelier Kevin",
+  "engine": {
+    "name": "Proton",
+    "version": "1.0.0"
+  }
+}
+```
+
+Lorsqu'aucune configuration n'est embarquée — cas du moteur générique lancé tel quel —
+la route répond malgré tout, avec des valeurs par défaut :
+
+```json
+{
+  "name": "Proton",
+  "windowTitle": "Proton",
+  "version": null,
+  "company": null,
+  "engine": {
+    "name": "Proton",
+    "version": "1.0.0"
+  }
+}
+```
+
+Cette route permet notamment à une application d'afficher son propre numéro de version
+sans le coder en dur, et de détecter qu'elle s'exécute bien dans Proton plutôt que dans
+un navigateur ordinaire.
+
+## Ce que cette route ne doit pas exposer
+
+* aucun chemin physique du système de fichiers — l'application Web n'a pas à connaître
+  son emplacement sur le disque (§7);
+* aucun numéro de port — les URL relatives suffisent (§9.2);
+* aucune information sur la machine hôte ou l'utilisateur.
+
+La route est en lecture seule. La configuration est figée dans l'exécutable au moment
+de sa génération et ne peut pas être modifiée à l'exécution.
 
 ---
 
@@ -1447,19 +1476,37 @@ Les URL appartenant à l'origine locale Proton demeurent dans la WebView.
 
 ---
 
-# 52. Protection contre l'accès depuis d'autres pages Web
+# 52. Origine des requêtes — restriction reportée après la V1
 
-Même si le serveur n'écoute que sur `127.0.0.1`, les API Proton doivent être conçues en tenant compte du fait qu'un navigateur externe présent sur la même machine pourrait tenter de communiquer avec un serveur local.
+La V1 **n'applique pas** de restriction d'origine sur ses API.
 
-Proton ne doit pas activer un CORS permissif tel que :
+Le serveur n'écoute que sur `127.0.0.1` : il est inaccessible depuis le réseau (§10).
+Le périmètre visé par la V1 est le développement local et les applications
+personnelles, pour lesquelles cette isolation est jugée suffisante.
 
-```text
-Access-Control-Allow-Origin: *
-```
+## Risque accepté
 
-Les API sont prévues pour être utilisées par l'application servie par Proton elle-même.
+Une page Web ouverte dans un navigateur **de la même machine** peut atteindre le
+serveur Proton si elle en devine le port. La politique CORS empêche cette page de
+*lire* les réponses, mais pas de *provoquer des effets* : une requête simple, sans
+contrôle préalable, parvient au serveur et s'exécute.
 
-Les requêtes provenant d'origines étrangères doivent être rejetées lorsque la politique HTTP applicable permet cette vérification.
+Ce risque est accepté pour la V1. Il suppose qu'un utilisateur visite une page
+malveillante pendant qu'une application Proton s'exécute, et que cette page découvre
+le port retenu — lequel change à chaque démarrage (§9.2).
+
+## Contrainte de conception
+
+Ce choix doit rester **réversible sans réécriture**. La vérification d'origine doit
+donc exister comme point de passage identifié dans la chaîne de traitement HTTP, même
+si la V1 le laisse tout passer.
+
+Restreindre l'accès dans une version ultérieure doit être affaire de politique, pas de
+refonte.
+
+> **Décision datée du 2026-08-24.** Les mesures envisagées et les conditions de
+> révision figurent dans `docs/02-perimetre-v1.md`. Ce choix doit être réexaminé
+> avant toute distribution large d'applications Proton.
 
 ---
 
@@ -1552,9 +1599,11 @@ La V1 n'a pas pour vocation de remplacer un serveur de bases de données multi-u
 
 Les opérations HTTP locales doivent néanmoins être suffisamment rapides pour qu'une application utilisant `fetch()` ait une sensation comparable à une application native.
 
-Le hash SHA-256 ne doit être calculé que lorsqu'il est utile.
+La V1 ne calcule aucune empreinte SHA-256 sur les fichiers de `data` (§16), ce qui
+supprime de fait le principal risque de coût inutile sur cette API.
 
-Il ne doit pas être recalculé massivement pour tout un arbre de fichiers lors d'un simple listing.
+L'`ETag` faible de §15 se déduit de métadonnées déjà connues du système de fichiers :
+son calcul est négligeable et ne nécessite pas de lire le contenu.
 
 ---
 
@@ -1564,15 +1613,21 @@ L'API de fichiers doit traiter les données sous forme de flux lorsque cela est 
 
 Un fichier volumineux ne doit pas nécessairement être chargé intégralement plusieurs fois en mémoire.
 
-De même, le calcul SHA-256 devrait pouvoir être effectué par flux.
+En lecture comme en écriture, le contenu devrait transiter par flux plutôt que par un
+tampon complet en mémoire.
 
 ---
 
-# 59. Concurrence sur les fichiers
+# 59. Atomicité de l'écriture
 
-Le système `ETag` / `If-Match` protège les applications contre les modifications concurrentes involontaires.
+La V1 ne protège pas contre les écritures concurrentes (§16), mais elle doit garantir
+qu'aucun fichier ne se retrouve à moitié écrit.
 
-L'écriture finale devrait également être effectuée de manière aussi atomique que possible.
+C'est la garantie qui subsiste, et elle suffit au périmètre visé : une application
+relisant un fichier obtient toujours un contenu cohérent, même si une écriture a été
+interrompue.
+
+L'écriture finale doit donc être effectuée de manière aussi atomique que possible.
 
 Une stratégie adaptée consiste à :
 
@@ -1607,7 +1662,13 @@ Les fonctionnalités suivantes sont volontairement reportées :
 * macOS;
 * Linux;
 * magasin de plugins;
-* système de permissions complexe.
+* système de permissions complexe;
+* contrôle de concurrence sur les fichiers — `ETag` fort et `If-Match`, voir §16;
+* restriction d'origine sur les API HTTP, voir §52.
+
+Les deux derniers points sont des simplifications décidées le 2026-08-24 en cours de
+conception, et non des fonctionnalités jamais envisagées. Leurs conditions de révision
+figurent dans `docs/02-perimetre-v1.md`.
 
 ---
 
@@ -1858,7 +1919,9 @@ un :
 GET /data/test.txt
 ```
 
-doit retourner son contenu et un `ETag`.
+doit retourner son contenu, un `ETag` faible et un `Last-Modified`.
+
+Une seconde requête portant `If-None-Match` avec cet `ETag` doit retourner `304`.
 
 ---
 
@@ -1874,27 +1937,47 @@ doit pouvoir créer ou remplacer le fichier.
 
 ---
 
-## CA-07 — Écriture conditionnelle réussie
+## CA-07 — Configuration exposée
 
-Un `PUT` avec le bon `If-Match` doit réussir.
+Sur un exécutable généré avec :
 
----
-
-## CA-08 — Conflit
-
-Un `PUT` avec un ancien `ETag` doit retourner :
-
-```text
-412
+```json
+{ "name": "Test Proton" }
 ```
 
-et ne doit modifier aucune donnée.
+la route :
+
+```http
+GET /api/app
+```
+
+doit retourner ce nom.
+
+Sur le moteur générique, la même route doit répondre avec les valeurs par défaut plutôt
+qu'échouer.
 
 ---
 
-## CA-09 — Suppression conditionnelle
+## CA-08 — Écriture atomique
 
-Le même comportement doit s'appliquer à `DELETE`.
+Un fichier ne doit jamais être observable dans un état partiellement écrit.
+
+Une lecture effectuée pendant le remplacement d'un fichier doit retourner soit
+l'ancien contenu complet, soit le nouveau, jamais un contenu tronqué.
+
+---
+
+## CA-09 — Suppression
+
+Un :
+
+```http
+DELETE /data/test.txt
+```
+
+doit supprimer le fichier et retourner `204`.
+
+La suppression d'un fichier inexistant doit retourner `404`.
 
 ---
 
@@ -2049,11 +2132,13 @@ avec :
 
 * confinement dans `data`;
 * listing des dossiers;
-* SHA-256;
-* `ETag`;
-* `If-Match`;
+* `ETag` faible et `Last-Modified`, pour la validation de cache;
+* écriture atomique;
 * codes HTTP;
 * format d'erreur uniforme.
+
+Ajouter également la route `/api/app` (§24.1), qui appartient à la même couche HTTP
+et ne dépend que de la configuration embarquée.
 
 ---
 
