@@ -21,8 +21,35 @@ internal static class Program
     private static int Main(string[] args)
     {
         ApplicationConfiguration.Initialize();
+        InstallGlobalHandlers();
 
         return IsConfigMode(args) ? RunGenerator() : RunApplication();
+    }
+
+    /// <summary>
+    /// Recueille les exceptions qui échapperaient à tout le reste (§54).
+    /// </summary>
+    /// <remarks>
+    /// Sans cela, une exception survenue sur le thread de l'interface ferait
+    /// disparaître la fenêtre en affichant la boîte de dialogue de Windows Forms,
+    /// que l'utilisateur d'une application de bureau n'a aucune raison de voir.
+    /// </remarks>
+    private static void InstallGlobalHandlers()
+    {
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+
+        Application.ThreadException += (_, e) =>
+        {
+            DiagnosticLog.Error("Exception sur le thread de l'interface.", e.Exception);
+            ErrorDialog.ShowStartupFailure(e.Exception);
+        };
+
+        AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+        {
+            // Le processus s'arrête juste après : le journal est le seul témoin qui
+            // subsistera.
+            DiagnosticLog.Error("Exception non gérée.", e.ExceptionObject as Exception);
+        };
     }
 
     /// <summary>

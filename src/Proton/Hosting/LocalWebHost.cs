@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Proton.AppApi;
 using Proton.Bootstrap;
 using Proton.Configuration;
+using Proton.Infrastructure;
 using Proton.FileApi;
 using Proton.SqliteApi;
 
@@ -64,6 +65,7 @@ public sealed class LocalWebHost : IAsyncDisposable
 
         WebApplication application = builder.Build();
 
+        MapUnhandledExceptions(application);
         MapApiBodyLimit(application);
         MapAppApi(application);
         MapSqliteApi(application, paths);
@@ -74,7 +76,48 @@ public sealed class LocalWebHost : IAsyncDisposable
         await application.StartAsync(cancellationToken).ConfigureAwait(false);
 
         Uri address = ResolveAddress(application);
+        DiagnosticLog.Info($"Serveur démarré sur {address} — application : {paths.App}");
+
         return new LocalWebHost(application, address);
+    }
+
+    /// <summary>
+    /// Dernier filet : traduit toute exception non prévue en réponse au format
+    /// uniforme (§24) et la consigne (§56).
+    /// </summary>
+    /// <remarks>
+    /// Sans ce middleware, une exception inattendue produirait la page d'erreur du
+    /// serveur, en HTML — une application JavaScript recevrait alors quelque chose
+    /// qu'elle ne sait pas interpréter, là où elle attend un code d'erreur stable.
+    /// </remarks>
+    private static void MapUnhandledExceptions(WebApplication application)
+    {
+        application.Use(async (context, next) =>
+        {
+            try
+            {
+                await next(context).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+            {
+                // La page a abandonné sa requête : ce n'est pas une erreur.
+            }
+            catch (Exception ex)
+            {
+                DiagnosticLog.Error(
+                    $"Exception non gérée sur {context.Request.Method} {context.Request.Path}", ex);
+
+                // Les en-têtes peuvent être déjà partis si la réponse avait commencé.
+                if (context.Response.HasStarted)
+                    return;
+
+                context.Response.Clear();
+                await ApiError.WriteAsync(context, StatusCodes.Status500InternalServerError,
+                    ApiError.Unexpected, "An unexpected error occurred.",
+                    new Dictionary<string, string> { ["reason"] = ex.GetType().Name })
+                    .ConfigureAwait(false);
+            }
+        });
     }
 
     /// <summary>
@@ -179,10 +222,12 @@ public sealed class LocalWebHost : IAsyncDisposable
         try
         {
             await _application.StopAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+            DiagnosticLog.Info($"Serveur arrêté, port {Address.Port} libéré.");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             // L'arrêt du serveur ne doit jamais empêcher la fermeture du processus.
+            DiagnosticLog.Error("L'arrêt du serveur a échoué.", ex);
         }
 
         await _application.DisposeAsync().ConfigureAwait(false);

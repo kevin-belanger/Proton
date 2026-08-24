@@ -38,44 +38,8 @@ internal static class ErrorDialog
 
     private static void Report(string summary, Exception exception, string dialogMessage)
     {
-        WriteDiagnosticFile(summary, exception);
+        DiagnosticLog.Error(summary, exception);
         MessageBox.Show(dialogMessage, Caption, MessageBoxButtons.OK, MessageBoxIcon.Error);
     }
 
-    /// <summary>
-    /// Consigne l'erreur hors du dossier de l'application : les journaux ne doivent
-    /// pas encombrer une application en fonctionnement normal (§56).
-    /// </summary>
-    private static void WriteDiagnosticFile(string summary, Exception exception)
-    {
-        try
-        {
-            string folder = Path.Combine(
-                Environment.GetFolderPath(
-                    Environment.SpecialFolder.LocalApplicationData,
-                    Environment.SpecialFolderOption.Create),
-                "Proton",
-                "logs");
-
-            Directory.CreateDirectory(folder);
-
-            File.AppendAllText(
-                Path.Combine(folder, "startup-error.log"),
-                $"""
-                 ─────────────────────────────────────────────
-                 {DateTimeOffset.Now:yyyy-MM-dd HH:mm:ss zzz}
-                 {summary}
-                 Exécutable : {Environment.ProcessPath}
-
-                 {exception}
-
-
-                 """);
-        }
-        catch (Exception)
-        {
-            // L'impossibilité d'écrire le diagnostic ne doit pas masquer l'erreur
-            // d'origine, qui reste présentée dans la boîte de dialogue.
-        }
-    }
 }

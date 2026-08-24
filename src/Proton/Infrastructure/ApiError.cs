@@ -28,6 +28,7 @@ public static class ApiError
     public const string NotImplemented = "not_implemented";
     public const string InvalidRequest = "invalid_request";
     public const string SqlFailed = "sql_failed";
+    public const string Unexpected = "unexpected_error";
 
     /// <summary>Écrit une réponse d'erreur au format uniforme.</summary>
     public static Task WriteAsync(

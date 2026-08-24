@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 0.9
+**Version du document :** 0.10
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 0.10 — journal de diagnostic précisé (§56.1) et filets contre les erreurs non gérées (§56.2).
 * 0.9 — §34 tranché : ATTACH interdit par une limite du moteur SQLite plutôt que par analyse du SQL.
 * 0.8 — cadre de conception explicité (§3.4) : application locale, pas service exposé ; les liens ne sont plus résolus dans le confinement (§14.1).
 * 0.7 — dernières questions de l'exemple Todo réglées : ordonnancement des opérations mixtes (§59.1) et limites de taille par espace (§58.1).
@@ -1878,6 +1879,43 @@ Le moteur doit néanmoins pouvoir produire suffisamment d'information pour diagn
 Les journaux ne doivent pas encombrer le dossier de l'application en fonctionnement normal.
 
 Une destination située dans le profil utilisateur ou un mode de diagnostic est préférable.
+
+## 56.1 Emplacement et forme
+
+Le journal est écrit dans le profil de l'utilisateur :
+
+```text
+%LOCALAPPDATA%\Proton\logs\proton.log
+```
+
+Le dossier de l'application reste donc intact — il se distribue par copie et ne doit
+rien accumuler (§2).
+
+Seuls les événements notables y figurent : démarrage, adresse retenue, arrêt, et les
+erreurs graves. **Jamais une ligne par requête**, qui ferait grossir le fichier sans
+rien apprendre.
+
+Le fichier est encodé en UTF-8 **avec marque d'ordre des octets**. Sans elle, les
+outils de Windows le lisent dans la page de codes ANSI et affichent « dÃ©marrÃ© » : un
+journal illisible ne rend aucun service.
+
+Au-delà d'un mégaoctet, une génération précédente est conservée sous `proton.log.1`.
+Deux fichiers suffisent : l'intérêt d'un journal de diagnostic est de couvrir la
+dernière session, non l'historique complet.
+
+## 56.2 Aucune erreur ne doit disparaître en silence
+
+Trois filets se répondent, chacun pour un chemin d'échappement différent :
+
+| Origine | Traitement |
+| --- | --- |
+| Exception dans le traitement d'une requête | Réponse `500` au format uniforme (§24), et consignation |
+| Exception sur le thread de l'interface | Boîte de dialogue et consignation, plutôt que la fenêtre d'erreur de Windows Forms |
+| Exception non gérée avant l'arrêt du processus | Consignation — le journal est alors le seul témoin qui subsiste |
+
+Le premier point mérite d'être souligné : sans lui, une exception imprévue produirait
+la page d'erreur HTML du serveur. Une application JavaScript recevrait alors quelque
+chose qu'elle ne sait pas interpréter, là où elle attend un code stable.
 
 ---
 

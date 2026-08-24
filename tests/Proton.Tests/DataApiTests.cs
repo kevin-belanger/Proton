@@ -269,6 +269,24 @@ public sealed class DataApiTests : IAsyncLifetime
     // --- §24 : format des erreurs ------------------------------------------------------
 
     [Fact]
+    public async Task Une_erreur_inattendue_reste_au_format_json()
+    {
+        // Un corps JSON malformé traverse la désérialisation et remonte plus loin que
+        // les cas prévus. Quelle que soit l'exception, la réponse doit rester
+        // interprétable par une application JavaScript (§24) — jamais la page HTML du
+        // serveur.
+        using var content = new StringContent("{ ceci n'est pas du JSON", Encoding.UTF8, "application/json");
+        HttpResponseMessage response = await _client.PostAsync("/api/sqlite/app.db/execute", content);
+
+        Assert.False(response.IsSuccessStatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+
+        string json = await response.Content.ReadAsStringAsync();
+        Assert.Contains("\"error\"", json, StringComparison.Ordinal);
+        Assert.Contains("\"code\"", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task Les_erreurs_suivent_le_format_uniforme()
     {
         HttpResponseMessage response = await _client.GetAsync("/data/absent.txt");
