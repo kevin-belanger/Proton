@@ -4,6 +4,7 @@
 **Date :** 2026-08-24
 **Couvre :** analyse fonctionnelle §37 à §45, phase 6, phase 7
 **Preuve :** `prototypes/config-pe/` — 4 générations enchaînées, 2 modes de publication
+**Implémenté dans :** `src/Proton/Personalization/`
 
 ---
 
@@ -191,11 +192,14 @@ tests de non-régression.
 
 ## 6. Zones non couvertes
 
+Les trois premières lignes ont été réglées en portant le prototype dans le moteur
+(phase 6) ; elles sont conservées avec leur enseignement.
+
 | Sujet | État |
 | --- | --- |
-| Métadonnées `VERSIONINFO` (§42) | Non implémenté. Même mécanique (`RT_VERSION`), sans risque nouveau pour le bundle, mais la ressource doit être reconstruite octet à octet. |
-| Icônes multi-résolutions | Le code gère N images ; testé en mono-image seulement (16/32/64). Une icône réaliste (16+32+48+256, le 256 en PNG) reste à exercer. |
-| Cible en cours d'exécution | Le déplacement échouera. À traduire en message clair plutôt qu'en exception brute (§54). |
+| Métadonnées `VERSIONINFO` (§42) | **Fait.** La ressource doit être écrite en langue **neutre** : le SDK y place déjà la sienne, et une seconde écrite en langue 1033 est ignorée par Windows au profit de la première. |
+| Icônes multi-résolutions | **Exercé** en 16+32. Une icône portant une image PNG de 256 pixels reste à valider. |
+| Cible en cours d'exécution | **Fait.** Le cas est détecté et traduit en message explicite plutôt qu'en « Access to the path is denied ». |
 | Signature Authenticode (§45) | Le recollage invalide toute signature du moteur. Conforme à l'analyse : l'enfant est non signé jusqu'à nouvelle signature. |
 | `ReadyToRun`, trimming, win-arm64 | Non exercés. Le trimming en particulier modifie le nombre d'entrées du bundle — à revalider s'il est activé. |
 

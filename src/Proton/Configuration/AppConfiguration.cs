@@ -1,11 +1,21 @@
+using Proton.Personalization;
+
 namespace Proton.Configuration;
+
+/// <summary>Dimensions et comportement de la fenêtre principale (§40).</summary>
+public sealed record WindowConfiguration
+{
+    public int Width { get; init; } = 1280;
+    public int Height { get; init; } = 800;
+    public bool Resizable { get; init; } = true;
+}
 
 /// <summary>
 /// Identité de l'application, telle que la porte l'exécutable.
 ///
-/// Elle provient de la configuration embarquée par le mode <c>/config</c> (§39). Tant
-/// que celui-ci n'existe pas, seules les valeurs par défaut du moteur sont
-/// disponibles — la route <c>/api/app</c> doit répondre malgré tout (§24.1).
+/// Elle provient de la configuration embarquée par le mode <c>/config</c> (§39), lue
+/// en fin de fichier au démarrage. Un exécutable non personnalisé — le moteur
+/// générique — n'en possède pas et retombe sur les valeurs par défaut.
 /// </summary>
 public sealed record AppConfiguration
 {
@@ -13,6 +23,7 @@ public sealed record AppConfiguration
     public required string WindowTitle { get; init; }
     public string? Version { get; init; }
     public string? Company { get; init; }
+    public WindowConfiguration Window { get; init; } = new();
 
     /// <summary>Identité du moteur, distincte de celle de l'application.</summary>
     public static string EngineName => "Proton";
@@ -24,18 +35,29 @@ public sealed record AppConfiguration
     public static AppConfiguration Default { get; } = new()
     {
         Name = EngineName,
-        WindowTitle = EngineName,
-        Version = null,
-        Company = null
+        WindowTitle = EngineName
     };
 
     /// <summary>
-    /// Charge la configuration de l'exécutable en cours.
+    /// Charge la configuration embarquée dans l'exécutable en cours, ou les valeurs
+    /// par défaut du moteur.
     /// </summary>
-    /// <remarks>
-    /// La lecture de la configuration embarquée arrivera avec le mode <c>/config</c>
-    /// (phase 6) ; le procédé est établi dans <c>docs/01</c>. D'ici là, le moteur ne
-    /// connaît que son identité par défaut.
-    /// </remarks>
-    public static AppConfiguration Load() => Default;
+    public static AppConfiguration Load()
+    {
+        string? executable = Environment.ProcessPath;
+
+        if (string.IsNullOrEmpty(executable))
+            return Default;
+
+        try
+        {
+            return EmbeddedConfig.TryRead(executable) ?? Default;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // Un exécutable illisible ne doit pas empêcher l'application de démarrer :
+            // elle fonctionnera sous l'identité du moteur.
+            return Default;
+        }
+    }
 }

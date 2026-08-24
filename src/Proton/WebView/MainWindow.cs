@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.WinForms;
+using Proton.Configuration;
 using Proton.Infrastructure;
 
 namespace Proton.WebView;
@@ -17,15 +18,23 @@ public sealed class MainWindow : Form
     private readonly Uri _startAddress;
     private readonly WebView2 _webView;
 
-    public MainWindow(Uri startAddress, string title)
+    public MainWindow(Uri startAddress, AppConfiguration configuration)
     {
         _startAddress = startAddress;
 
-        Text = title;
-        Width = 1280;
-        Height = 800;
+        Text = configuration.WindowTitle;
+        Width = configuration.Window.Width;
+        Height = configuration.Window.Height;
         MinimumSize = new Size(480, 360);
         StartPosition = FormStartPosition.CenterScreen;
+
+        // Une fenêtre non redimensionnable conserve une barre de titre et son bouton
+        // de fermeture : seule la poignée de redimensionnement disparaît (§40).
+        if (!configuration.Window.Resizable)
+        {
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            MaximizeBox = false;
+        }
 
         _webView = new WebView2 { Dock = DockStyle.Fill };
         Controls.Add(_webView);
