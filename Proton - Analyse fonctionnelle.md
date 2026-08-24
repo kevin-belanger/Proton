@@ -1529,6 +1529,36 @@ liste d'extensions n'est à tenir à jour.
 > Cette règle a été mise au jour en écrivant l'exemple `samples/Todo`, dont les
 > pièces jointes exposaient exactement ce défaut.
 
+## 51.2 Que devient la ressource interceptée — à trancher
+
+Empêcher la disparition de l'application est acquis. Reste à décider ce qui arrive
+ensuite au fichier sur lequel l'utilisateur a cliqué.
+
+Le comportement provisoire — confier l'URL au navigateur par défaut — fonctionne mais
+ne convient pas comme comportement définitif :
+
+* il ouvre un navigateur complet pour consulter une pièce jointe;
+* le fichier s'affiche dans le navigateur, et non dans l'application que
+  l'utilisateur a associée à ce type de document;
+* l'URL retenue contient un **port éphémère** (§9.2). L'onglet cesse de fonctionner
+  dès que l'application se ferme, et l'entrée laissée dans l'historique du navigateur
+  est morte au prochain démarrage.
+
+Le comportement visé est celui d'une application de bureau : le fichier est
+téléchargé, puis ouvert avec l'application qui lui est associée. Deux voies :
+
+1. **Par le serveur.** Répondre `Content-Disposition: attachment` lorsque l'en-tête
+   `Sec-Fetch-Dest` vaut `document`, c'est-à-dire pour les seules navigations de
+   premier niveau. La WebView transforme alors la navigation en téléchargement et
+   affiche sa barre native ; l'application reste à l'écran. Élégant, mais rend le
+   garde-fou de §51.1 inopérant, puisque celui-ci annule la navigation avant même
+   que le serveur ne réponde.
+2. **Par la fenêtre.** Récupérer la ressource, l'enregistrer dans le dossier des
+   téléchargements de l'utilisateur, puis la confier au système. Le garde-fou reste
+   la seule règle, mais la fenêtre acquiert une responsabilité de téléchargement.
+
+À décider en phase 3, lorsque `/data` servira réellement des fichiers.
+
 ---
 
 # 52. Origine des requêtes — restriction reportée après la V1
