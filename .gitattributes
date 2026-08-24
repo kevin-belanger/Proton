@@ -1,0 +1,15 @@
+# Normalisation en LF dans le dépôt, restitution selon la plateforme.
+* text=auto
+
+*.cs      text diff=csharp
+*.csproj  text
+*.json    text
+*.md      text
+*.html    text
+*.css     text
+*.js      text
+
+*.ico     binary
+*.exe     binary
+*.dll     binary
+*.png     binary

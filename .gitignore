@@ -1,0 +1,42 @@
+# --- Sorties de compilation .NET ---
+bin/
+obj/
+publish/
+pub-*/
+*.user
+*.suo
+*.userprefs
+artifacts/
+
+# --- Exécutables et binaires ---
+# Une publication self-contained pèse de 37 à 75 Mo : jamais dans le dépôt.
+*.exe
+*.dll
+*.pdb
+*.so
+*.dylib
+
+# --- Données d'exécution d'une application Proton ---
+# `data/` appartient à l'utilisateur final, `config/` est un outil local de
+# personnalisation (§46) : ni l'un ni l'autre ne se distribue.
+# Ancrés à la racine, pour ne pas masquer un futur samples/*/config/.
+/data/
+/config/
+
+# --- Espaces de travail locaux ---
+lab/
+lab[0-9]/
+run-*/
+
+# --- Outils et système ---
+.vs/
+.vscode/
+.idea/
+*.swp
+Thumbs.db
+desktop.ini
+
+# --- Résidus de synchronisation Google Drive ---
+.tmp.drive*
+*.gdoc
+*.gsheet
