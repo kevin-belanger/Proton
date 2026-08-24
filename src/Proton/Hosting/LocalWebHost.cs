@@ -5,7 +5,10 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Proton.AppApi;
 using Proton.Bootstrap;
+using Proton.Configuration;
+using Proton.FileApi;
 
 namespace Proton.Hosting;
 
@@ -51,10 +54,18 @@ public sealed class LocalWebHost : IAsyncDisposable
             //
             // Port 0 : le système attribue un port libre au moment de l'écoute (§9.2).
             options.Listen(IPAddress.Loopback, port: 0);
+
+            // La limite par défaut protège un serveur exposé au public ; elle n'a pas
+            // lieu d'être ici. Elle est levée globalement puis rétablie sur /api, seul
+            // espace dont le corps est chargé en mémoire (§58.1).
+            options.Limits.MaxRequestBodySize = null;
         });
 
         WebApplication application = builder.Build();
 
+        MapApiBodyLimit(application);
+        MapAppApi(application);
+        MapDataApi(application, paths);
         MapReservedApiSpace(application);
         MapStaticApplicationFiles(application, paths);
 
@@ -65,9 +76,38 @@ public sealed class LocalWebHost : IAsyncDisposable
     }
 
     /// <summary>
-    /// Réserve les espaces <c>/data</c> et <c>/api</c> avant tout service de fichier
-    /// statique. Les implémentations arriveront aux phases 3 et 4 ; d'ici là ces
-    /// routes répondent explicitement plutôt que de retomber sur `app`.
+    /// Rétablit une limite de corps sur <c>/api</c>, dont les requêtes sont
+    /// désérialisées en mémoire avant d'être exécutées (§58.1).
+    /// </summary>
+    private static void MapApiBodyLimit(WebApplication application)
+    {
+        const long ApiBodyLimit = 32L * 1024 * 1024;
+
+        application.Use(async (context, next) =>
+        {
+            if (context.Request.Path.StartsWithSegments("/api"))
+            {
+                var feature = context.Features
+                    .Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>();
+
+                if (feature is { IsReadOnly: false })
+                    feature.MaxRequestBodySize = ApiBodyLimit;
+            }
+
+            await next(context).ConfigureAwait(false);
+        });
+    }
+
+    private static void MapAppApi(WebApplication application) =>
+        AppEndpoints.Map(application, AppConfiguration.Load());
+
+    private static void MapDataApi(WebApplication application, ApplicationPaths paths) =>
+        DataEndpoints.Map(application, new DataFileService(new DataPath(paths.Data)));
+
+    /// <summary>
+    /// Réserve ce qui reste de <c>/data</c> et <c>/api</c> avant tout service de
+    /// fichier statique : les routes non encore implémentées doivent répondre
+    /// explicitement plutôt que de retomber sur `app` (§49).
     /// </summary>
     private static void MapReservedApiSpace(WebApplication application)
     {

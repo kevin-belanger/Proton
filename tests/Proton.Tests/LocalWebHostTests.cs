@@ -115,18 +115,17 @@ public sealed class LocalWebHostTests : IDisposable
     // --- §49 : priorité des espaces réservés --------------------------------------
 
     [Theory]
-    [InlineData("/data/test.txt")]
-    [InlineData("/api/app")]
     [InlineData("/api/sqlite/app.db/query")]
-    public async Task Reserve_les_espaces_data_et_api(string path)
+    [InlineData("/api/inconnu")]
+    public async Task Les_api_non_encore_livrees_repondent_501(string path)
     {
         await using LocalWebHost host = await StartAsync();
         using HttpClient client = CreateClient(host);
 
         HttpResponseMessage response = await client.GetAsync(path);
 
-        // Non encore implémentés, mais déjà réservés : ils ne doivent pas retomber
-        // sur le service de fichiers statiques.
+        // Réservées mais pas encore implémentées : elles doivent répondre
+        // explicitement plutôt que de retomber sur le service de fichiers statiques.
         Assert.Equal(HttpStatusCode.NotImplemented, response.StatusCode);
     }
 
@@ -143,7 +142,9 @@ public sealed class LocalWebHostTests : IDisposable
 
         HttpResponseMessage response = await client.GetAsync("/data/test.html");
 
-        Assert.Equal(HttpStatusCode.NotImplemented, response.StatusCode);
+        // La route appartient à l'API de fichiers, qui ne trouve rien de ce nom dans
+        // `data` : le fichier homonyme de `app` ne doit pas s'y substituer.
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.DoesNotContain("détourné", await response.Content.ReadAsStringAsync(), StringComparison.Ordinal);
     }
 
