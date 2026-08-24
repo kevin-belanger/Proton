@@ -1,0 +1,155 @@
+using System.Net;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Proton.Bootstrap;
+
+namespace Proton.Hosting;
+
+/// <summary>
+/// Serveur HTTP embarqué d'une application Proton.
+///
+/// Kestrel est lancé dans le processus Proton, sur un port choisi par le système et
+/// sur la seule interface de boucle locale (§9, §10). L'adresse retenue est exposée
+/// après démarrage : l'application Web n'a jamais à la connaître, seule la fenêtre
+/// hôte s'en sert.
+/// </summary>
+public sealed class LocalWebHost : IAsyncDisposable
+{
+    /// Espaces d'URL réservés aux API de Proton. Ils ont priorité sur les fichiers
+    /// statiques de `app`, afin qu'un fichier `app/data/x.html` ne puisse pas prendre
+    /// le contrôle de la route `/data/x.html` (§49).
+    private static readonly string[] ReservedPrefixes = ["/data", "/api"];
+
+    private readonly WebApplication _application;
+
+    private LocalWebHost(WebApplication application, Uri address)
+    {
+        _application = application;
+        Address = address;
+    }
+
+    /// <summary>Adresse effective du serveur, port compris.</summary>
+    public Uri Address { get; }
+
+    /// <summary>
+    /// Démarre le serveur et retourne une instance prête à servir.
+    /// </summary>
+    public static async Task<LocalWebHost> StartAsync(
+        ApplicationPaths paths,
+        CancellationToken cancellationToken = default)
+    {
+        var builder = WebApplication.CreateSlimBuilder();
+
+        builder.Logging.ClearProviders();
+
+        builder.WebHost.ConfigureKestrel(options =>
+        {
+            // 127.0.0.1 explicitement, et non AnyIP : une autre machine du réseau ne
+            // doit pas pouvoir joindre l'application (§10, CA-04).
+            //
+            // Listen et non ListenLocalhost : ce dernier refuse le port dynamique,
+            // « localhost » désignant potentiellement deux adresses à la fois.
+            //
+            // Port 0 : le système attribue un port libre au moment de l'écoute (§9.2).
+            options.Listen(IPAddress.Loopback, port: 0);
+        });
+
+        WebApplication application = builder.Build();
+
+        MapReservedApiSpace(application);
+        MapStaticApplicationFiles(application, paths);
+
+        await application.StartAsync(cancellationToken).ConfigureAwait(false);
+
+        Uri address = ResolveAddress(application);
+        return new LocalWebHost(application, address);
+    }
+
+    /// <summary>
+    /// Réserve les espaces <c>/data</c> et <c>/api</c> avant tout service de fichier
+    /// statique. Les implémentations arriveront aux phases 3 et 4 ; d'ici là ces
+    /// routes répondent explicitement plutôt que de retomber sur `app`.
+    /// </summary>
+    private static void MapReservedApiSpace(WebApplication application)
+    {
+        application.Use(async (context, next) =>
+        {
+            PathString path = context.Request.Path;
+
+            bool reserved = ReservedPrefixes.Any(prefix =>
+                path.StartsWithSegments(prefix, StringComparison.OrdinalIgnoreCase));
+
+            if (!reserved)
+            {
+                await next(context).ConfigureAwait(false);
+                return;
+            }
+
+            context.Response.StatusCode = StatusCodes.Status501NotImplemented;
+            context.Response.ContentType = "application/json; charset=utf-8";
+            await context.Response.WriteAsync(
+                """{"error":{"code":"not_implemented","message":"This API is not available yet."}}""",
+                context.RequestAborted).ConfigureAwait(false);
+        });
+    }
+
+    /// <summary>
+    /// Expose le contenu de <c>app</c> directement à la racine du serveur (§7).
+    /// </summary>
+    private static void MapStaticApplicationFiles(WebApplication application, ApplicationPaths paths)
+    {
+        var files = new PhysicalFileProvider(paths.App);
+
+        application.UseDefaultFiles(new DefaultFilesOptions
+        {
+            FileProvider = files,
+            RequestPath = PathString.Empty
+        });
+
+        application.UseStaticFiles(new StaticFileOptions
+        {
+            FileProvider = files,
+            RequestPath = PathString.Empty,
+            // Le contenu servi est local et change pendant le développement :
+            // laisser la validation par ETag faire son travail à chaque requête.
+            OnPrepareResponse = context =>
+                context.Context.Response.Headers.CacheControl = "no-cache"
+        });
+    }
+
+    private static Uri ResolveAddress(WebApplication application)
+    {
+        // Après démarrage, Urls reflète les adresses réellement retenues par Kestrel,
+        // port attribué par le système compris.
+        string? address = application.Urls.FirstOrDefault();
+
+        if (string.IsNullOrEmpty(address))
+            throw new InvalidOperationException(
+                "Kestrel a démarré sans exposer d'adresse d'écoute.");
+
+        // Kestrel annonce « http://127.0.0.1:48723 ». L'URI de base doit se terminer
+        // par une barre oblique pour que la WebView charge bien la racine.
+        return new Uri(address.EndsWith('/') ? address : address + "/");
+    }
+
+    /// <summary>
+    /// Arrête le serveur proprement et libère le port (§12, CA-13).
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await _application.StopAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
+        }
+        catch (Exception)
+        {
+            // L'arrêt du serveur ne doit jamais empêcher la fermeture du processus.
+        }
+
+        await _application.DisposeAsync().ConfigureAwait(false);
+    }
+}

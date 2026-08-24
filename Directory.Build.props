@@ -1,0 +1,24 @@
+<Project>
+
+  <!--
+    Les sorties de compilation ne doivent jamais atterrir dans le dossier du dépôt :
+    celui-ci est synchronisé par Google Drive, et une publication self-contained y
+    pousserait plusieurs dizaines de mégaoctets à chaque build.
+
+    LOCALAPPDATA existe sur toute machine Windows : ce chemin reste portable sans
+    être propre à un poste.
+  -->
+  <PropertyGroup>
+    <UseArtifactsOutput>true</UseArtifactsOutput>
+    <ArtifactsPath>$(LOCALAPPDATA)\ProtonBuild</ArtifactsPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+</Project>

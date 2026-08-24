@@ -1,0 +1,164 @@
+using System.Diagnostics;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.WinForms;
+using Proton.Infrastructure;
+
+namespace Proton.WebView;
+
+/// <summary>
+/// Fenêtre principale d'une application Proton : une fenêtre Windows ordinaire dont
+/// toute la surface est occupée par une WebView2.
+///
+/// Aucun élément de navigateur n'est visible — ni barre d'adresse, ni boutons de
+/// navigation, ni onglets (§11). L'utilisateur doit percevoir une application native.
+/// </summary>
+public sealed class MainWindow : Form
+{
+    private readonly Uri _startAddress;
+    private readonly WebView2 _webView;
+
+    public MainWindow(Uri startAddress, string title)
+    {
+        _startAddress = startAddress;
+
+        Text = title;
+        Width = 1280;
+        Height = 800;
+        MinimumSize = new Size(480, 360);
+        StartPosition = FormStartPosition.CenterScreen;
+
+        _webView = new WebView2 { Dock = DockStyle.Fill };
+        Controls.Add(_webView);
+    }
+
+    /// <summary>Code de sortie du processus, renseigné en cas d'échec d'affichage.</summary>
+    public int ExitCode { get; private set; }
+
+    /// <summary>
+    /// L'initialisation de la WebView est asynchrone et se déroule une fois la boucle
+    /// de messages en place : c'est le seul contexte où ses continuations reviennent
+    /// sur le thread de l'interface.
+    /// </summary>
+    protected override async void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+
+        try
+        {
+            await InitialiseWebViewAsync().ConfigureAwait(true);
+        }
+        catch (WebViewUnavailableException ex)
+        {
+            ErrorDialog.ShowWebViewFailure(ex);
+            ExitCode = 2;
+            Close();
+        }
+        catch (Exception ex)
+        {
+            ErrorDialog.ShowStartupFailure(ex);
+            ExitCode = 1;
+            Close();
+        }
+    }
+
+    private async Task InitialiseWebViewAsync()
+    {
+        CoreWebView2Environment environment;
+
+        try
+        {
+            // Le dossier de données de la WebView doit rester hors du dossier de
+            // l'application : sans cela WebView2 crée un dossier de cache à côté de
+            // l'exécutable, ce qui contredit la simplicité de distribution du §2.
+            environment = await CoreWebView2Environment
+                .CreateAsync(browserExecutableFolder: null, userDataFolder: ResolveUserDataFolder())
+                .ConfigureAwait(true);
+        }
+        catch (Exception ex) when (ex is WebView2RuntimeNotFoundException or DllNotFoundException)
+        {
+            throw new WebViewUnavailableException(
+                "Aucun environnement WebView2 utilisable n'a été trouvé sur cet ordinateur.", ex);
+        }
+
+        await _webView.EnsureCoreWebView2Async(environment).ConfigureAwait(true);
+
+        ConfigureBrowserBehaviour(_webView.CoreWebView2);
+
+        _webView.CoreWebView2.Navigate(_startAddress.ToString());
+    }
+
+    private void ConfigureBrowserBehaviour(CoreWebView2 core)
+    {
+        CoreWebView2Settings settings = core.Settings;
+
+        settings.AreDefaultContextMenusEnabled = false;
+        settings.IsStatusBarEnabled = false;
+        settings.AreBrowserAcceleratorKeysEnabled = false;
+        settings.IsSwipeNavigationEnabled = false;
+
+        // Une navigation vers une origine externe ne doit pas remplacer
+        // silencieusement l'application : elle part vers le navigateur par
+        // défaut de Windows (§51).
+        core.NavigationStarting += (_, e) =>
+        {
+            if (IsLocalAddress(e.Uri))
+                return;
+
+            e.Cancel = true;
+            OpenInDefaultBrowser(e.Uri);
+        };
+
+        // Idem pour tout ce qui demanderait une nouvelle fenêtre : Proton V1 ne gère
+        // qu'une fenêtre (§60).
+        core.NewWindowRequested += (_, e) =>
+        {
+            e.Handled = true;
+            OpenInDefaultBrowser(e.Uri);
+        };
+    }
+
+    private bool IsLocalAddress(string uri) =>
+        Uri.TryCreate(uri, UriKind.Absolute, out Uri? parsed)
+        && parsed.IsLoopback
+        && parsed.Port == _startAddress.Port;
+
+    private static void OpenInDefaultBrowser(string uri)
+    {
+        if (!Uri.TryCreate(uri, UriKind.Absolute, out Uri? parsed))
+            return;
+
+        // Seuls les schémas Web sont relayés : un `file:` ou un schéma exotique
+        // provenant de la page ne doit pas devenir un moyen de lancer un programme.
+        if (parsed.Scheme is not ("http" or "https"))
+            return;
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(parsed.ToString()) { UseShellExecute = true })?.Dispose();
+        }
+        catch (Exception)
+        {
+            // L'absence de navigateur par défaut ne doit pas interrompre l'application.
+        }
+    }
+
+    /// <summary>
+    /// Dossier de travail de la WebView, dans le profil de l'utilisateur.
+    /// </summary>
+    private static string ResolveUserDataFolder()
+    {
+        string root = Environment.GetFolderPath(
+            Environment.SpecialFolder.LocalApplicationData,
+            Environment.SpecialFolderOption.Create);
+
+        string folder = Path.Combine(root, "Proton", "WebView2");
+        Directory.CreateDirectory(folder);
+        return folder;
+    }
+}
+
+/// <summary>
+/// Aucun runtime WebView2 utilisable n'est disponible sur la machine (§55).
+/// </summary>
+public sealed class WebViewUnavailableException(string message, Exception inner)
+    : Exception(message, inner);

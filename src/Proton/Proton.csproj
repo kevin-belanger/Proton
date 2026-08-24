@@ -1,0 +1,57 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <RootNamespace>Proton</RootNamespace>
+    <AssemblyName>Proton</AssemblyName>
+  </PropertyGroup>
+
+  <!-- Identité par défaut du moteur générique. Un exécutable produit par le mode
+       /config remplacera ces métadonnées par celles de son config.json. -->
+  <PropertyGroup>
+    <Product>Proton</Product>
+    <AssemblyTitle>Proton</AssemblyTitle>
+    <Description>Moteur d'applications de bureau HTML/CSS/JavaScript</Description>
+    <Version>1.0.0</Version>
+  </PropertyGroup>
+
+  <!-- Publication : self-contained, un seul fichier, bundle compressé.
+       Voir docs/01-personnalisation-executable.md — ces trois choix sont
+       compatibles avec la personnalisation par le mode /config. -->
+  <PropertyGroup>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+
+    <!-- Une application Proton se distribue par copie de l'exécutable seul (§2).
+         Symboles embarqués plutôt que dans un .pdb voisin, et pas de fichiers de
+         documentation XML dans la sortie de publication. -->
+    <DebugType>embedded</DebugType>
+
+    <!-- Indispensable : sans cette propriété, WebView2Loader.dll reste un fichier
+         voisin de l'exécutable. L'application démarre alors et affiche sa fenêtre,
+         mais la WebView échoue sur DllNotFoundException et la fenêtre reste vide. -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <AllowedReferenceRelatedFileExtensions>none</AllowedReferenceRelatedFileExtensions>
+    <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <!-- Kestrel dans un processus Windows Forms : ASP.NET Core n'est pas inclus
+       par défaut dans une application de bureau. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Proton.Tests" />
+  </ItemGroup>
+
+</Project>
