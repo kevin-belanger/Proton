@@ -114,20 +114,44 @@ public sealed class MainWindow : Form
         // événements et ne sont donc jamais affectés par ce filtre.
         core.NavigationStarting += (_, e) =>
         {
-            if (LeavesTheApplication(e.Uri))
-            {
-                e.Cancel = true;
-                OpenInDefaultBrowser(e.Uri);
-            }
+            if (!LeavesTheApplication(e.Uri))
+                return;
+
+            e.Cancel = true;
+            Redirect(e.Uri);
         };
 
         // Idem pour tout ce qui demanderait une nouvelle fenêtre : Proton V1 ne gère
-        // qu'une fenêtre (§60).
+        // qu'une fenêtre (§60). C'est par ici que passe un lien portant `target`.
         core.NewWindowRequested += (_, e) =>
         {
             e.Handled = true;
-            OpenInDefaultBrowser(e.Uri);
+            Redirect(e.Uri);
         };
+    }
+
+    /// <summary>
+    /// Achemine une adresse que la WebView ne doit pas suivre.
+    /// </summary>
+    /// <remarks>
+    /// Une ressource servie par Proton est téléchargée puis ouverte avec
+    /// l'application associée (§51.2) ; une adresse étrangère part vers le navigateur
+    /// par défaut (§51).
+    /// </remarks>
+    private void Redirect(string uri)
+    {
+        if (!Uri.TryCreate(uri, UriKind.Absolute, out Uri? parsed))
+            return;
+
+        if (IsOwnOrigin(parsed))
+        {
+            // Volontairement sans await : la fenêtre ne doit pas se figer le temps du
+            // téléchargement, qui peut porter sur un fichier volumineux.
+            _ = ResourceOpener.OpenAsync(parsed);
+            return;
+        }
+
+        OpenInDefaultBrowser(uri);
     }
 
     /// <summary>
@@ -144,10 +168,12 @@ public sealed class MainWindow : Form
         if (!Uri.TryCreate(uri, UriKind.Absolute, out Uri? parsed))
             return false;
 
-        bool local = parsed.IsLoopback && parsed.Port == _startAddress.Port;
-
-        return !local || Hosting.ReservedSpaces.Contains(parsed.AbsolutePath);
+        return !IsOwnOrigin(parsed) || Hosting.ReservedSpaces.Contains(parsed.AbsolutePath);
     }
+
+    /// <summary>L'adresse est-elle servie par cette instance de Proton ?</summary>
+    private bool IsOwnOrigin(Uri uri) =>
+        uri.IsLoopback && uri.Port == _startAddress.Port;
 
     private static void OpenInDefaultBrowser(string uri)
     {

@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 1.0
+**Version du document :** 1.1
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 1.1 — §51.2 implémenté : une pièce jointe est téléchargée puis ouverte avec l'application associée, au lieu d'être confiée au navigateur.
 * 1.0 — les sept phases sont implémentées ; état des critères d'acceptation relevé en §65.1.
 * 0.10 — journal de diagnostic précisé (§56.1) et filets contre les erreurs non gérées (§56.2).
 * 0.9 — §34 tranché : ATTACH interdit par une limite du moteur SQLite plutôt que par analyse du SQL.
@@ -1750,21 +1751,25 @@ ne convient pas :
   dès que l'application se ferme, et l'entrée laissée dans l'historique du navigateur
   est morte au prochain démarrage.
 
-Deux voies permettent d'obtenir le comportement retenu. Le choix relève de
-l'implémentation et sera fait en phase 3, lorsque `/data` servira réellement des
-fichiers :
+Le procédé retenu : la fenêtre récupère la ressource, l'enregistre dans le dossier
+des téléchargements de l'utilisateur, puis la confie au système. Le garde-fou de
+§51.1 demeure la seule règle de navigation.
+
+Deux voies avaient été envisagées :
 
 1. **Par le serveur.** Répondre `Content-Disposition: attachment` lorsque l'en-tête
    `Sec-Fetch-Dest` vaut `document`, c'est-à-dire pour les seules navigations de
    premier niveau. La WebView transforme alors la navigation en téléchargement et
    affiche sa barre native. Élégant, mais rend le garde-fou de §51.1 inopérant,
    puisque celui-ci annule la navigation avant même que le serveur ne réponde.
-2. **Par la fenêtre.** Récupérer la ressource, l'enregistrer dans le dossier des
-   téléchargements de l'utilisateur, puis la confier au système. Le garde-fou reste
-   la seule règle, mais la fenêtre acquiert une responsabilité de téléchargement.
+2. **Par la fenêtre** — retenu. Le garde-fou reste la seule règle de navigation, au
+   prix d'une responsabilité de téléchargement confiée à la fenêtre.
 
-Quelle que soit la voie retenue, l'utilisateur ne doit jamais se retrouver devant un
-navigateur, ni devant une adresse contenant un numéro de port.
+Un fichier de même nom déjà présent n'est jamais écrasé : un suffixe est ajouté,
+l'utilisateur ayant peut-être encore ouvert le précédent.
+
+Dans tous les cas, il ne doit jamais se retrouver devant un navigateur, ni devant une
+adresse contenant un numéro de port.
 
 ---
 
