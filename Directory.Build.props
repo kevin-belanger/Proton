@@ -5,12 +5,20 @@
     celui-ci est synchronisé par Google Drive, et une publication self-contained y
     pousserait plusieurs dizaines de mégaoctets à chaque build.
 
-    LOCALAPPDATA existe sur toute machine Windows : ce chemin reste portable sans
-    être propre à un poste.
+    Racine par défaut : C:\proton, hors du dépôt et hors des dossiers masqués par
+    l'Explorateur Windows. Surchargeable par la variable d'environnement
+    PROTON_OUTPUT_ROOT, pour une machine où cet emplacement ne conviendrait pas.
+
+        C:\proton\
+        ├── build\    artefacts intermédiaires — jamais à consulter
+        └── dist\     Proton.exe publié
   -->
   <PropertyGroup>
+    <ProtonOutputRoot Condition="'$(ProtonOutputRoot)' == ''">$(PROTON_OUTPUT_ROOT)</ProtonOutputRoot>
+    <ProtonOutputRoot Condition="'$(ProtonOutputRoot)' == ''">C:\proton</ProtonOutputRoot>
+
     <UseArtifactsOutput>true</UseArtifactsOutput>
-    <ArtifactsPath>$(LOCALAPPDATA)\ProtonBuild</ArtifactsPath>
+    <ArtifactsPath>$(ProtonOutputRoot)\build</ArtifactsPath>
   </PropertyGroup>
 
   <PropertyGroup>

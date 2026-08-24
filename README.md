@@ -45,6 +45,29 @@ de se répéter.
 
 ---
 
+## Compiler
+
+```bash
+dotnet publish src/Proton/Proton.csproj -c Release
+```
+
+L'exécutable est produit dans **`C:\proton\dist\Proton.exe`**, et les artefacts
+intermédiaires dans `C:\proton\build`.
+
+Les sorties ne restent volontairement pas dans le dépôt : celui-ci est synchronisé
+par Google Drive, et une publication self-contained y pousserait plusieurs dizaines
+de mégaoctets à chaque build. La racine de sortie se change par la variable
+d'environnement `PROTON_OUTPUT_ROOT`.
+
+Pour essayer le résultat, copier `Proton.exe` seul dans un dossier vide et le lancer :
+il y crée `app/` et `data/`, puis affiche sa fenêtre.
+
+```bash
+dotnet test
+```
+
+---
+
 ## Technologies visées
 
 C# / .NET 10 · WebView2 · Kestrel · SQLite (`Microsoft.Data.Sqlite`) · publication

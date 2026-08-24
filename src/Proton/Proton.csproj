@@ -1,5 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- La publication atterrit dans un dossier fixe et facile à trouver, plutôt que
+       sous l'arborescence d'artefacts. `dotnet publish` suffit, sans option -o. -->
+  <PropertyGroup>
+    <PublishDir>$(ProtonOutputRoot)\dist\</PublishDir>
+  </PropertyGroup>
+
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
