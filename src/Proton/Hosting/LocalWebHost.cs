@@ -9,6 +9,7 @@ using Proton.AppApi;
 using Proton.Bootstrap;
 using Proton.Configuration;
 using Proton.FileApi;
+using Proton.SqliteApi;
 
 namespace Proton.Hosting;
 
@@ -65,6 +66,7 @@ public sealed class LocalWebHost : IAsyncDisposable
 
         MapApiBodyLimit(application);
         MapAppApi(application);
+        MapSqliteApi(application, paths);
         MapDataApi(application, paths);
         MapReservedApiSpace(application);
         MapStaticApplicationFiles(application, paths);
@@ -100,6 +102,9 @@ public sealed class LocalWebHost : IAsyncDisposable
 
     private static void MapAppApi(WebApplication application) =>
         AppEndpoints.Map(application, AppConfiguration.Load());
+
+    private static void MapSqliteApi(WebApplication application, ApplicationPaths paths) =>
+        SqliteEndpoints.Map(application, new SqliteService(new DataPath(paths.Data)));
 
     private static void MapDataApi(WebApplication application, ApplicationPaths paths) =>
         DataEndpoints.Map(application, new DataFileService(new DataPath(paths.Data)));

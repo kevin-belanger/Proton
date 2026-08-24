@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 0.8
+**Version du document :** 0.9
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 0.9 — §34 tranché : ATTACH interdit par une limite du moteur SQLite plutôt que par analyse du SQL.
 * 0.8 — cadre de conception explicité (§3.4) : application locale, pas service exposé ; les liens ne sont plus résolus dans le confinement (§14.1).
 * 0.7 — dernières questions de l'exemple Todo réglées : ordonnancement des opérations mixtes (§59.1) et limites de taille par espace (§58.1).
 * 0.6 — comportement d'ouverture d'une pièce jointe arrêté (§51.2) ; traitement générique des échecs d'écriture (§17.1) et normalisation des noms documentée (§17.2) ; listing d'un dossier inexistant en 404 (§21).

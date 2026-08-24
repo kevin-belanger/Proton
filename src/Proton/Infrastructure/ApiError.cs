@@ -26,6 +26,8 @@ public static class ApiError
     public const string PayloadTooLarge = "payload_too_large";
     public const string MethodNotAllowed = "method_not_allowed";
     public const string NotImplemented = "not_implemented";
+    public const string InvalidRequest = "invalid_request";
+    public const string SqlFailed = "sql_failed";
 
     /// <summary>Écrit une réponse d'erreur au format uniforme.</summary>
     public static Task WriteAsync(

@@ -115,7 +115,6 @@ public sealed class LocalWebHostTests : IDisposable
     // --- §49 : priorité des espaces réservés --------------------------------------
 
     [Theory]
-    [InlineData("/api/sqlite/app.db/query")]
     [InlineData("/api/inconnu")]
     public async Task Les_api_non_encore_livrees_repondent_501(string path)
     {
