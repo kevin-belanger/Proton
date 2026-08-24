@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 0.10
+**Version du document :** 1.0
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 1.0 — les sept phases sont implémentées ; état des critères d'acceptation relevé en §65.1.
 * 0.10 — journal de diagnostic précisé (§56.1) et filets contre les erreurs non gérées (§56.2).
 * 0.9 — §34 tranché : ATTACH interdit par une limite du moteur SQLite plutôt que par analyse du SQL.
 * 0.8 — cadre de conception explicité (§3.4) : application locale, pas service exposé ; les liens ne sont plus résolus dans le confinement (§14.1).
@@ -2455,7 +2456,34 @@ Sur une machine cible compatible ne possédant pas de runtime .NET installé sé
 
 ---
 
-# 66. Priorités d'implémentation pour Claude Code
+## 65.1 État des critères
+
+Relevé au terme des sept phases.
+
+| Critère | État | Comment il a été vérifié |
+| --- | --- | --- |
+| CA-01 · Exécutable seul | **Vérifié** | Dossier vide, `app` et `data` créés, WebView active confirmée par ses processus enfants |
+| CA-02 · Application personnalisée | **Vérifié** | L'exemple `Todo` s'affiche et fonctionne |
+| CA-03 · Port automatique | **Vérifié** | Test automatisé : deux instances obtiennent des ports distincts |
+| CA-04 · Isolation réseau | **Vérifié** | Injoignable sur les cinq interfaces routables de la machine |
+| CA-05 · Lecture de fichier | **Vérifié** | Test automatisé, `ETag` et `304` compris |
+| CA-06 · Écriture | **Vérifié** | Test automatisé |
+| CA-07 · Configuration exposée | **Vérifié** | Test automatisé sur `/api/app` |
+| CA-08 · Écriture atomique | **Vérifié** | Écriture par temporaire puis remplacement |
+| CA-09 · Suppression | **Vérifié** | Test automatisé, `404` sur fichier absent compris |
+| CA-10 · Traversée interdite | **Vérifié** | 34 tests couvrant les formes connues |
+| CA-11 · SQLite | **Vérifié** | Cycle complet par HTTP, puis dans l'exemple `Todo` |
+| CA-12 · Transaction | **Vérifié** | Test automatisé : la première commande est annulée |
+| CA-13 · Fermeture | **Vérifié** | Processus terminé, port réutilisable aussitôt |
+| CA-14 · Génération | **Vérifié** | SHA-256 du moteur inchangé après chaque passe |
+| CA-15 · Personnalisation | **Vérifié** | Nom, icône et métadonnées relevés sur l'exécutable produit |
+| CA-16 · Indépendance de `config` | **Vérifié** | Dossier supprimé, l'application garde son identité |
+| CA-17 · Génération récursive | **Vérifié** | Chaîne de trois générations, sans accumulation |
+| CA-18 · Aucune installation .NET | **Présumé** | La publication self-contained l'assure, mais aucune machine dépourvue de runtime .NET n'était disponible pour l'établir |
+
+CA-18 est le seul qui n'ait pas été constaté directement : il demande une machine
+vierge. Tous les autres l'ont été, soit par un test automatisé, soit sur un
+exécutable réellement lancé.
 
 Le développement devrait être effectué progressivement.
 

@@ -4,8 +4,8 @@ Moteur Windows autonome permettant d'exécuter une application HTML / CSS / Java
 comme une application de bureau.
 
 Proton démarre un serveur local, sert l'application depuis un dossier `app`, et lui
-donne accès à des capacités normalement hors de portée d'une page Web : lecture et
-écriture de fichiers, bases SQLite locales, et à terme d'autres fonctions natives.
+donne accès à des capacités hors de portée d'une page Web ordinaire : lecture et
+écriture de fichiers, bases SQLite locales.
 
 Une application Proton se distribue par simple copie :
 
@@ -20,28 +20,100 @@ Ni installateur, ni serveur, ni runtime à installer séparément.
 
 ---
 
-## État
+## Démarrer
 
-**En cours de conception.** Aucune implémentation n'existe encore ; le risque
-technique principal — la génération d'exécutables personnalisés — a été levé par un
-prototype.
+Téléchargez `Proton.exe`, placez-le dans un dossier vide et lancez-le. Il y crée
+`app` et `data`, puis affiche une page d'accueil.
 
-Le périmètre de la V1 est arrêté : voir [docs/02-perimetre-v1.md](docs/02-perimetre-v1.md)
-pour les simplifications assumées et leurs conditions de révision.
+Remplacez ensuite le contenu de `app` par le vôtre. Vos pages sont servies à la
+racine :
+
+```text
+app/index.html      →  /
+app/css/style.css   →  /css/style.css
+```
+
+L'application n'a jamais à connaître son emplacement sur le disque, ni le port
+retenu : les URL relatives suffisent.
+
+### Les API
+
+Aucune bibliothèque n'est requise — tout passe par `fetch`.
+
+```js
+// Identité de l'application, telle que l'exécutable la porte
+const app = await (await fetch('/api/app')).json();
+
+// Fichiers
+await fetch('/data/notes.txt', { method: 'PUT', body: 'bonjour' });
+const texte = await (await fetch('/data/notes.txt')).text();
+const { entries } = await (await fetch('/data/dossier/')).json();
+
+// Dossiers — la barre oblique finale les désigne
+await fetch('/data/photos/', { method: 'PUT' });
+await fetch('/data/photos/?recursive=1', { method: 'DELETE' });
+
+// SQLite
+await fetch('/api/sqlite/app.db/execute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        sql: 'INSERT INTO notes(texte) VALUES($t)',
+        parameters: { $t: 'bonjour' }
+    })
+});
+```
+
+`samples/Todo` est une application complète qui exerce toutes ces capacités.
+
+### Personnaliser l'exécutable
+
+Préparez `config/config.json` et `config/icon.ico` :
+
+```json
+{
+  "name": "Gestion Inventaire",
+  "executableName": "GestionInventaire.exe",
+  "windowTitle": "Gestion Inventaire — Édition 2026",
+  "version": "2.4.1",
+  "company": "Atelier Kevin",
+  "window": { "width": 1280, "height": 800, "resizable": true }
+}
+```
+
+puis lancez :
+
+```bash
+Proton.exe /config
+```
+
+Vous obtenez `GestionInventaire.exe` : même moteur, avec son nom, son icône et ses
+métadonnées Windows. `Proton.exe` reste intact, et le dossier `config` peut être
+supprimé — l'exécutable généré porte sa configuration en lui.
+
+Distribuez alors `GestionInventaire.exe` + `app/`. Rien d'autre.
 
 ---
 
-## Documents
+## État
 
-| Document | Contenu |
+Les sept phases prévues sont implémentées. Le moteur démarre, sert son application,
+expose ses API et sait produire des exécutables personnalisés.
+
+| Phase | Contenu |
 | --- | --- |
-| [Analyse fonctionnelle](Proton%20-%20Analyse%20fonctionnelle.md) | La spécification : ce que Proton doit faire, et les critères d'acceptation de la V1 |
-| [docs/](docs/) | Notes techniques — les mécanismes établis expérimentalement |
-| [prototypes/](prototypes/) | Les prototypes qui ont tranché ces questions, avec leurs mesures |
+| 1–2 | Fenêtre, WebView2, Kestrel, port automatique, initialisation |
+| 3 | API de fichiers, dossiers, `/api/app` |
+| 4 | API SQLite — requêtes, écritures, transactions |
+| 5 | Journal de diagnostic, traitement uniforme des erreurs |
+| 6 | Mode `/config` — icône, métadonnées, configuration embarquée |
+| 7 | Publication self-contained, fichier unique, compressé |
 
-L'analyse décrit le **quoi**. Les notes de `docs/` décrivent le **comment**, uniquement
-lorsqu'il a demandé une vérification. Les deux se renvoient l'un à l'autre plutôt que
-de se répéter.
+**114 tests automatisés.** Les critères d'acceptation de la V1 sont récapitulés en
+fin d'analyse fonctionnelle.
+
+Ce qui reste hors périmètre est énuméré en §60, et les simplifications assumées dans
+[docs/02-perimetre-v1.md](docs/02-perimetre-v1.md).
 
 ---
 
@@ -59,19 +131,33 @@ par Google Drive, et une publication self-contained y pousserait plusieurs dizai
 de mégaoctets à chaque build. La racine de sortie se change par la variable
 d'environnement `PROTON_OUTPUT_ROOT`.
 
-Pour essayer le résultat, copier `Proton.exe` seul dans un dossier vide et le lancer :
-il y crée `app/` et `data/`, puis affiche sa fenêtre.
-
 ```bash
 dotnet test
 ```
 
 ---
 
-## Technologies visées
+## Documents
+
+| Document | Contenu |
+| --- | --- |
+| [Analyse fonctionnelle](Proton%20-%20Analyse%20fonctionnelle.md) | La spécification : ce que Proton doit faire, et ses critères d'acceptation |
+| [docs/](docs/) | Notes techniques — les mécanismes établis expérimentalement |
+| [prototypes/](prototypes/) | Les prototypes qui ont tranché ces questions, avec leurs mesures |
+| [samples/](samples/) | Applications d'exemple |
+
+L'analyse décrit le **quoi**. Les notes de `docs/` décrivent le **comment**, uniquement
+lorsqu'il a demandé une vérification. Les deux se renvoient l'un à l'autre plutôt que
+de se répéter.
+
+---
+
+## Technologies
 
 C# / .NET 10 · WebView2 · Kestrel · SQLite (`Microsoft.Data.Sqlite`) · publication
-self-contained single-file.
+self-contained en fichier unique.
+
+Le diagnostic est écrit dans `%LOCALAPPDATA%\Proton\logs\proton.log`.
 
 ---
 
