@@ -173,10 +173,10 @@ L'analyse décrit le **quoi**. Les notes de `docs/` décrivent le **comment**, u
 lorsqu'il a demandé une vérification. Les deux se renvoient l'un à l'autre plutôt que
 de se répéter.
 
-`docs/index.html` tient en un seul fichier sans ressource externe : c'est ce qui lui
-permet d'être à la fois publié par GitHub Pages et déposé tel quel comme page
-d'accueil du moteur générique au premier démarrage (§8.1). Le dépôt n'en garde qu'une
-copie — le site et la fenêtre montrent littéralement le même fichier.
+`docs/index.html` est publié par GitHub Pages depuis le dossier `docs` de `main`
+(§63.1). La page d'accueil du moteur y renvoie par un lien plutôt que d'en reprendre
+le contenu : présenter Proton à qui l'évalue et accueillir qui vient de le lancer sont
+deux travaux différents (§8.1).
 
 ---
 

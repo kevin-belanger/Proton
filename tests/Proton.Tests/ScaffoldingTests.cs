@@ -52,17 +52,25 @@ public sealed class ScaffoldingTests : IDisposable
         Assert.Contains("<!doctype html>", page, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Proton", page, StringComparison.Ordinal);
 
-        // La page d'accueil est la documentation officielle elle-même : elle décrit
-        // les trois API que Proton ajoute à une page Web ordinaire.
+        // Elle interroge les API du moteur : c'est ce qui la distingue d'une page
+        // Web ordinaire, et ce qui en fait un premier diagnostic.
         Assert.Contains("/api/app", page, StringComparison.Ordinal);
         Assert.Contains("/api/sqlite", page, StringComparison.Ordinal);
         Assert.Contains("/files", page, StringComparison.Ordinal);
 
+        // Une sonde en GET sur `/api/sqlite` reçoit 405 : la route n'accepte que
+        // POST. C'est la preuve qu'elle répond, et non une panne — la page doit la
+        // compter comme active (§8.1).
+        Assert.Contains("405", page, StringComparison.Ordinal);
+
+        // Elle oriente vers la documentation plutôt que de la reprendre (§8.1).
+        Assert.Contains("https://kevin-belanger.github.io/Proton/", page, StringComparison.Ordinal);
+
         // Elle doit s'afficher sans réseau. Ce sont les ressources liées qui en
-        // décideraient — feuille de style, script, image, police — et non les liens,
-        // qu'un clic confie de toute façon au navigateur du système (§51.1).
-        Assert.DoesNotMatch(
-            "<(script|img|iframe|link|source|video|audio|embed|object)\\b", page);
+        // décideraient — feuille de style, image, police, script distant — et non
+        // les liens, qu'un clic confie au navigateur du système (§51.1).
+        Assert.DoesNotMatch("src\\s*=\\s*[\"']?(https?:)?//", page);
+        Assert.DoesNotMatch("<(link|img|iframe|source|video|audio|embed|object)\\b", page);
 
         Assert.DoesNotContain("@import", page, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("url(", page, StringComparison.OrdinalIgnoreCase);

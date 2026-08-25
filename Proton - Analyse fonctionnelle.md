@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 1.7
+**Version du document :** 1.8
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,7 +13,8 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
-* 1.7 — la page d'accueil du moteur générique devient la documentation officielle elle-même (§8.1).
+* 1.8 — la documentation d'utilisation est publiée par GitHub Pages (§63.1); la page d'accueil y renvoie au lieu de la reprendre (§8.1).
+* 1.7 — la page d'accueil devenait la documentation elle-même. Essayé, puis abandonné en 1.8.
 * 1.6 — licence MIT retenue, et son attribution portée par les exécutables générés (§45.1).
 * 1.5 — les données se regroupent sous une racine unique : `data/files` exposé par `/files`, `data/db` par l'API SQLite.
 * 1.4 — l'application est embarquée dans l'exécutable et servie depuis l'archive (§39.1) : la distribution se réduit à un fichier.
@@ -311,33 +312,48 @@ Cette page doit tenir en un seul fichier, sans ressource externe, et rester jeta
 elle est un point de départ que le développeur remplace par sa propre application,
 non un gabarit à désinstaller.
 
+Elle doit néanmoins faire plus qu'afficher un texte fixe. En interrogeant `/api/app`
+(§24.1) pour afficher le nom et la version de l'application, et en dressant l'état des
+services de Proton, elle montre d'emblée ce qu'une page Web ordinaire ne peut pas
+faire — et sert de premier diagnostic si quelque chose ne répond pas.
+
 Une application de démonstration complète n'a pas sa place ici : elle vit dans
 `samples` (§64) et n'a pas à voyager dans chaque exécutable produit.
 
-## 8.1 La page d'accueil est la documentation
+## 8.1 La page d'accueil oriente, elle ne documente pas
 
-*Remplace la page de présentation initialement prévue.*
+*Une version antérieure de ce paragraphe faisait de la documentation elle-même la
+page d'accueil. L'essai a été fait, puis abandonné : les deux n'ont pas le même
+travail à faire.*
 
-Le premier démarrage est le seul moment où Proton dispose de l'attention d'un nouveau
-venu. Une page qui se contente de dresser l'état des services lui apprend que le
-moteur fonctionne, mais pas ce qu'il peut en faire.
+La documentation s'adresse à qui évalue Proton et cherche à comprendre. La page
+d'accueil s'adresse à qui vient de le lancer et veut commencer. Servir la première à
+la place de la seconde produit des incohérences visibles — un chapitre « pour
+commencer » qui explique comment télécharger l'exécutable déjà en train de tourner —
+et noie les trois lignes utiles sous un manuel.
 
-La page engendrée est donc la documentation officielle elle-même : le fichier
-`docs/index.html`, embarqué dans l'assembly à la compilation et déposé tel quel.
+La page d'accueil reste donc courte, et se contente de trois choses :
 
-Trois propriétés le permettent :
+1. dire ce qu'est cette fenêtre, en deux paragraphes;
+2. montrer que les services répondent, en les interrogeant réellement;
+3. **renvoyer vers la documentation publiée**, par un lien vers
+   `https://kevin-belanger.github.io/Proton/`.
 
-- elle est **autonome** — un seul fichier, sa feuille de style à l'intérieur, aucune
-  ressource liée : elle s'affiche sans réseau, comme l'exige le paragraphe précédent;
-- ses liens sortants ne l'en empêchent pas : une navigation vers une origine étrangère
-  est confiée au navigateur du système (§51.1), jamais suivie dans la fenêtre. La page
-  devient ainsi le point de départ vers le dépôt, les versions publiées et l'exemple;
-- le dépôt n'en conserve **qu'une seule copie**. La documentation publiée et la page
-  que Proton affiche sont le même fichier : elles ne peuvent pas diverger, et une
-  correction n'a pas à être faite deux fois.
+Ce lien ne l'empêche pas de s'afficher sans réseau : rien n'y est chargé depuis
+l'extérieur, et un clic part vers le navigateur du système (§51.1) plutôt que de
+remplacer la fenêtre.
 
-Un exécutable produit par `/config` n'est pas concerné : il sert sa propre application
-depuis son archive et ne crée aucun dossier `app` (§39.1).
+**Une sonde n'est pas un contrat.** L'état des services est établi par une requête
+`GET`, que toutes les routes n'acceptent pas : `/api/sqlite` n'admet que `POST` et
+répond `405`. C'est une réponse du service — donc la preuve qu'il est là. La page doit
+la compter comme active. La traiter en erreur ferait passer une route saine pour
+cassée, ce qui est exactement l'inverse du diagnostic recherché.
+
+La documentation, elle, vit dans `docs/index.html` et n'est pas embarquée : elle est
+publiée par GitHub Pages (§63.1).
+
+Un exécutable produit par `/config` n'est concerné par rien de tout ceci : il sert sa
+propre application depuis son archive et ne crée aucun dossier `app` (§39.1).
 
 Si `data` n'existe pas, Proton doit le créer, avec ses deux sous-dossiers.
 
@@ -2353,6 +2369,35 @@ Les Releases GitHub doivent pouvoir fournir :
 * les notes de version.
 
 La compilation initiale sera réalisée sur Windows.
+
+## 63.1 Documentation d'utilisation
+
+Le dépôt porte deux documentations, qui ne s'adressent pas aux mêmes lecteurs et ne
+doivent pas se confondre :
+
+| | Pour qui | Langue |
+| --- | --- | --- |
+| Ce document et `docs/*.md` | qui construit Proton | français |
+| `docs/index.html` | qui **utilise** Proton | anglais |
+
+La seconde présente le moteur à qui n'en a jamais entendu parler, décrit les trois API,
+et conduit pas à pas jusqu'à la génération d'un exécutable à partir de l'exemple.
+L'anglais est retenu parce qu'elle s'adresse au même public que `samples`, dont les
+interfaces et les commentaires le sont également.
+
+Elle est publiée par **GitHub Pages**, servie depuis le dossier `docs` de la branche
+principale, à l'adresse `https://kevin-belanger.github.io/Proton/`.
+
+Deux conséquences pratiques :
+
+* le dossier contient un fichier `.nojekyll` vide. Sans lui, Pages fait passer `docs`
+  par Jekyll avant de le servir; la page n'en a aucun besoin, et le fichier publié doit
+  être identique à celui du dépôt, à l'octet près;
+* `raw.githubusercontent.com` ne convient pas pour la servir : ce domaine répond
+  `text/plain` avec `nosniff`, ce qui affiche le code source au lieu de la page. Seul
+  Pages produit un vrai `text/html`.
+
+La page d'accueil du moteur y renvoie par un lien, sans en reprendre le contenu (§8.1).
 
 ---
 
