@@ -131,15 +131,15 @@ public sealed class LocalWebHostTests : IDisposable
     [Fact]
     public async Task Un_fichier_de_app_ne_peut_pas_capturer_une_route_reservee()
     {
-        // Un fichier `app/data/test.html` ne doit pas prendre le contrôle de la
-        // route `/data/test.html`, qui appartient à l'API Proton (§49).
+        // Un fichier `app/files/test.html` ne doit pas prendre le contrôle de la
+        // route `/files/test.html`, qui appartient à l'API Proton (§49).
         Directory.CreateDirectory(Path.Combine(_root, "app", "data"));
         await File.WriteAllTextAsync(Path.Combine(_root, "app", "data", "test.html"), "détourné");
 
         await using LocalWebHost host = await StartAsync();
         using HttpClient client = CreateClient(host);
 
-        HttpResponseMessage response = await client.GetAsync("/data/test.html");
+        HttpResponseMessage response = await client.GetAsync("/files/test.html");
 
         // La route appartient à l'API de fichiers, qui ne trouve rien de ce nom dans
         // `data` : le fichier homonyme de `app` ne doit pas s'y substituer.

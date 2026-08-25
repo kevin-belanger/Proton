@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 1.4
+**Version du document :** 1.5
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 1.5 — les données se regroupent sous une racine unique : `data/files` exposé par `/files`, `data/db` par l'API SQLite.
 * 1.4 — l'application est embarquée dans l'exécutable et servie depuis l'archive (§39.1) : la distribution se réduit à un fichier.
 * 1.3 — les bases SQLite quittent `data` pour un dossier `db` que nulle route n'expose (§26.1).
 * 1.2 — §41 complété : la fenêtre doit recevoir l'icône de l'exécutable, Windows Forms ne la reprenant pas seule.
@@ -73,8 +74,9 @@ celui-ci crée à côté de lui les dossiers dont il a besoin :
 ```text
 MonApplication/
 ├── MonApplication.exe
-├── data/
-└── db/
+└── data/
+    ├── files/
+    └── db/
 ```
 
 Lorsqu'il est exécuté, `MonApplication.exe` doit :
@@ -210,16 +212,20 @@ L'architecture ne doit cependant pas coupler inutilement le moteur HTTP, la gest
 
 # 6. Structure d'une application Proton
 
-Quatre dossiers possèdent une signification particulière.
+Trois dossiers possèdent une signification particulière.
 
 ```text
 Executable.exe
 │
-├── app/       l'application Web (§7)
-├── data/      ses fichiers, exposés par /data (§13)
-├── db/        ses bases SQLite, exposées par /api/sqlite (§26)
-└── config/    outil de personnalisation, non distribué (§36)
+├── app/          l'application Web (§7) — embarquée dans un exécutable généré
+├── data/         les données de l'application
+│   ├── files/    ses fichiers, exposés par /files (§13)
+│   └── db/       ses bases SQLite, exposées par /api/sqlite (§26)
+└── config/       outil de personnalisation, non distribué (§36)
 ```
+
+Regrouper les données sous une racine unique laisse un seul dossier à côté de
+l'exécutable, et fait de sa copie une sauvegarde complète.
 
 Ils doivent toujours être recherchés relativement au dossier contenant l'exécutable.
 
@@ -285,8 +291,8 @@ Lors du démarrage normal, Proton doit vérifier l'existence de :
 
 ```text
 app/
-data/
-db/
+data/files/
+data/db/
 ```
 
 Si `app` n'existe pas, Proton doit :
@@ -311,7 +317,7 @@ faire — et sert de premier diagnostic si quelque chose ne répond pas.
 Une application de démonstration complète n'a pas sa place ici : elle vit dans
 `samples` (§64) et n'a pas à voyager dans chaque exécutable produit.
 
-Si `data` ou `db` n'existent pas, Proton doit simplement les créer.
+Si `data` n'existe pas, Proton doit le créer, avec ses deux sous-dossiers.
 
 Proton ne doit jamais écraser automatiquement un fichier utilisateur déjà existant.
 
@@ -358,7 +364,7 @@ L'application Web elle-même ne doit jamais avoir besoin de connaître le numér
 Elle doit utiliser des URL relatives :
 
 ```javascript
-fetch('/data/settings.json')
+fetch('/files/settings.json')
 ```
 
 ou :
@@ -427,7 +433,7 @@ Il ne doit rester aucun serveur Proton actif en arrière-plan.
 
 ---
 
-# 13. API `data`
+# 13. API `files`
 
 Le dossier :
 
@@ -452,17 +458,17 @@ les fichiers de `data`.
 La route principale est :
 
 ```text
-/data/
+/files/
 ```
 
 ---
 
-# 14. Isolation du dossier `data`
+# 14. Isolation du dossier `files`
 
-Toutes les opérations réalisées par `/data` doivent obligatoirement rester à l'intérieur du dossier physique :
+Toutes les opérations réalisées par `/files` doivent obligatoirement rester à l'intérieur du dossier physique :
 
 ```text
-<application>/data/
+<application>/data/files/
 ```
 
 Une requête ne doit jamais pouvoir accéder à :
@@ -484,7 +490,7 @@ Les protections doivent inclure :
 Par exemple, une requête ressemblant à :
 
 ```text
-/data/../../Windows/System32/config
+/files/../../Windows/System32/config
 ```
 
 doit être refusée.
@@ -516,7 +522,7 @@ détruit, et ne doit donc jamais descendre à travers un lien.
 Exemple :
 
 ```http
-GET /data/settings.json
+GET /files/settings.json
 ```
 
 Si le fichier existe, Proton retourne directement son contenu.
@@ -547,7 +553,7 @@ Il ne constitue pas un mécanisme de contrôle de concurrence : voir §16.
 Une application peut demander qu'un fichier soit téléchargé plutôt qu'affiché :
 
 ```http
-GET /data/rapport.pdf?download=1
+GET /files/rapport.pdf?download=1
 ```
 
 Proton ajoute alors :
@@ -597,7 +603,7 @@ L'atomicité de l'écriture elle-même demeure exigée : voir §59.
 Une application remplace ou crée un fichier avec :
 
 ```http
-PUT /data/settings.json
+PUT /files/settings.json
 ```
 
 Le corps HTTP contient directement le nouveau contenu.
@@ -681,7 +687,7 @@ des développeurs d'applications Proton.
 Pour :
 
 ```http
-PUT /data/document.txt
+PUT /files/document.txt
 ```
 
 si le fichier n'existe pas :
@@ -710,7 +716,7 @@ lorsqu'il est disponible.
 Exemple :
 
 ```http
-DELETE /data/document.txt
+DELETE /files/document.txt
 ```
 
 La suppression est inconditionnelle. Comme pour l'écriture (§17), un `If-Match`
@@ -737,13 +743,13 @@ Une requête sur un dossier doit permettre d'obtenir son contenu.
 Exemple :
 
 ```http
-GET /data/
+GET /files/
 ```
 
 ou :
 
 ```http
-GET /data/documents/
+GET /files/documents/
 ```
 
 La réponse doit être JSON.
@@ -794,19 +800,19 @@ C'est elle qui distingue les deux natures de ressource, sur toutes les méthodes
 
 | Requête | Effet |
 | --- | --- |
-| `GET /data/notes` | Lit le fichier `notes` |
-| `GET /data/notes/` | Liste le dossier `notes` (§21) |
-| `PUT /data/notes` | Crée ou remplace le fichier `notes` |
-| `PUT /data/notes/` | Crée le dossier `notes` |
-| `DELETE /data/notes` | Supprime le fichier `notes` |
-| `DELETE /data/notes/` | Supprime le dossier `notes` |
+| `GET /files/notes` | Lit le fichier `notes` |
+| `GET /files/notes/` | Liste le dossier `notes` (§21) |
+| `PUT /files/notes` | Crée ou remplace le fichier `notes` |
+| `PUT /files/notes/` | Crée le dossier `notes` |
+| `DELETE /files/notes` | Supprime le fichier `notes` |
+| `DELETE /files/notes/` | Supprime le dossier `notes` |
 
 Lorsqu'un chemin sans barre oblique finale désigne en réalité un dossier existant,
 une lecture retourne :
 
 ```http
 301 Moved Permanently
-Location: /data/notes/
+Location: /files/notes/
 ```
 
 Cette convention lève l'ambiguïté sans introduire de méthode HTTP ni de route
@@ -815,21 +821,21 @@ particulière.
 ## 22.2 Création
 
 ```http
-PUT /data/rapports/2026/
+PUT /files/rapports/2026/
 ```
 
 Les dossiers parents manquants sont créés au passage. La réponse est `201 Created`,
 ou `204 No Content` si le dossier existait déjà — la création est donc idempotente.
 
 Les dossiers parents nécessaires à l'écriture d'un fichier continuent d'être créés
-implicitement : `PUT /data/rapports/2026/mars.pdf` fonctionne sans création préalable.
+implicitement : `PUT /files/rapports/2026/mars.pdf` fonctionne sans création préalable.
 
 ## 22.3 Suppression
 
 Par défaut, seul un dossier vide peut être supprimé :
 
 ```http
-DELETE /data/rapports/
+DELETE /files/rapports/
 ```
 
 Si le dossier n'est pas vide, Proton refuse :
@@ -851,7 +857,7 @@ La suppression d'un dossier et de tout son contenu doit être **demandée
 explicitement** :
 
 ```http
-DELETE /data/rapports/?recursive=1
+DELETE /files/rapports/?recursive=1
 ```
 
 Aucune récursion implicite n'est jamais effectuée. Une application qui omet le
@@ -862,7 +868,7 @@ paramètre ne peut pas détruire de données par accident.
 La suppression récursive est l'opération la plus destructrice de l'API. Trois règles
 la bornent.
 
-**Le dossier `data` lui-même ne peut pas être supprimé.** `DELETE /data/?recursive=1`
+**Le dossier `files` lui-même ne peut pas être supprimé.** `DELETE /files/?recursive=1`
 doit être refusé. Une application peut vider son espace de stockage entrée par
 entrée, mais pas faire disparaître sa racine.
 
@@ -1059,14 +1065,14 @@ racine.
 
 ## 26.1 Pourquoi un dossier séparé
 
-Aucune route n'expose `db`. Une base n'est joignable que par `/api/sqlite`, jamais
+Aucune route n'expose `data/db`. Une base n'est joignable que par `/api/sqlite`, jamais
 comme un fichier.
 
-Placée dans `data`, elle serait à la fois une base et un fichier ordinaire. Les
+Rangée parmi les fichiers, elle serait à la fois une base et un fichier ordinaire. Les
 conséquences ne sont pas théoriques :
 
-* `GET /data/application.db` la livrerait entière;
-* `PUT /data/application.db` la **détruirait** — le moteur répondrait ensuite
+* `GET /files/application.db` la livrerait entière;
+* `PUT /files/application.db` la **détruirait** — le moteur répondrait ensuite
   `file is not a database`;
 * une écriture pendant que SQLite l'utilise pourrait la corrompre durablement.
 
@@ -1723,7 +1729,7 @@ Le moteur SQLite ne doit pas connaître les détails de WebView2.
 │  │             Kestrel               │  │
 │  │                                   │  │
 │  │  /              → app/            │  │
-│  │  /data/...      → File API        │  │
+│  │  /files/...     → API fichiers        │  │
 │  │  /api/sqlite/...→ SQLite API      │  │
 │  └───────────────┬───────────────────┘  │
 │                  │                      │
@@ -1745,20 +1751,20 @@ Les routes internes Proton doivent avoir priorité sur les fichiers statiques de
 Les espaces suivants sont réservés :
 
 ```text
-/data
+/files
 /api
 ```
 
 Par conséquent, un fichier :
 
 ```text
-app/data/test.html
+app/files/test.html
 ```
 
 ne doit pas prendre le contrôle de :
 
 ```text
-/data/test.html
+/files/test.html
 ```
 
 Cette route appartient à l'API Proton.
@@ -1773,14 +1779,14 @@ Exemple :
 
 ```text
 http://127.0.0.1:48723/
-http://127.0.0.1:48723/data/settings.json
+http://127.0.0.1:48723/files/settings.json
 http://127.0.0.1:48723/api/sqlite/app.db/query
 ```
 
 Cela permet au JavaScript d'utiliser simplement :
 
 ```javascript
-fetch('/data/settings.json')
+fetch('/files/settings.json')
 ```
 
 sans connaître le port et sans configuration CORS particulière.
@@ -1811,7 +1817,7 @@ Ces espaces servent des **données**, non des pages. Une navigation de premier n
 vers l'un d'eux afficherait le contenu du fichier **à la place** de l'application :
 
 ```text
-<a href="/data/rapport.pdf">Rapport</a>
+<a href="/files/rapport.pdf">Rapport</a>
 ```
 
 Un clic sur ce lien remplacerait l'application par le lecteur PDF intégré. La fenêtre
@@ -1826,9 +1832,9 @@ feuilles de style, les médias, les cadres et les requêtes `fetch` ne sont pas 
 navigations et demeurent parfaitement libres :
 
 ```html
-<img src="/data/photo.jpg">          <!-- fonctionne -->
-<iframe src="/data/rapport.pdf">     <!-- fonctionne -->
-fetch('/data/settings.json')         <!-- fonctionne -->
+<img src="/files/photo.jpg">          <!-- fonctionne -->
+<iframe src="/files/rapport.pdf">     <!-- fonctionne -->
+fetch('/files/settings.json')         <!-- fonctionne -->
 ```
 
 Le filtrage porte sur la nature de la requête, non sur le type du fichier : aucune
@@ -1922,7 +1928,7 @@ Une application Proton devrait pouvoir être développée avec des outils Web or
 Par exemple :
 
 ```javascript
-const response = await fetch('/data/settings.json');
+const response = await fetch('/files/settings.json');
 ```
 
 ou :
@@ -2224,7 +2230,7 @@ par son application HTML/CSS/JavaScript.
 Il peut utiliser :
 
 ```text
-/data
+/files
 ```
 
 pour les fichiers persistants et :
@@ -2402,7 +2408,7 @@ data/test.txt
 un :
 
 ```http
-GET /data/test.txt
+GET /files/test.txt
 ```
 
 doit retourner son contenu, un `ETag` faible et un `Last-Modified`.
@@ -2416,7 +2422,7 @@ Une seconde requête portant `If-None-Match` avec cet `ETag` doit retourner `304
 Un :
 
 ```http
-PUT /data/test.txt
+PUT /files/test.txt
 ```
 
 doit pouvoir créer ou remplacer le fichier.
@@ -2458,7 +2464,7 @@ l'ancien contenu complet, soit le nouveau, jamais un contenu tronqué.
 Un :
 
 ```http
-DELETE /data/test.txt
+DELETE /files/test.txt
 ```
 
 doit supprimer le fichier et retourner `204`.

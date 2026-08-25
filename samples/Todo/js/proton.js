@@ -14,15 +14,15 @@ const Proton = {
 
     fichiers: {
 
-        /** Contenu d'un dossier de `data` (§21). */
+        /** Contenu d'un dossier de `data/files` (§21). */
         async lister(chemin = '') {
-            const resultat = await lire('/data/' + normaliser(chemin));
+            const resultat = await lire('/files/' + normaliser(chemin));
             return resultat.entries ?? [];
         },
 
         /** Contenu brut d'un fichier (§15). */
         async lireTexte(chemin) {
-            const reponse = await fetch('/data/' + normaliser(chemin));
+            const reponse = await fetch('/files/' + normaliser(chemin));
             if (!reponse.ok) throw await erreur(reponse);
             return await reponse.text();
         },
@@ -36,7 +36,7 @@ const Proton = {
          * (§19) — l'ignorer, c'est écraser en silence.
          */
         async ecrire(chemin, contenu) {
-            const reponse = await fetch('/data/' + normaliser(chemin), {
+            const reponse = await fetch('/files/' + normaliser(chemin), {
                 method: 'PUT',
                 body: contenu
             });
@@ -46,13 +46,13 @@ const Proton = {
 
         /** Supprime un fichier (§20). */
         async supprimer(chemin) {
-            const reponse = await fetch('/data/' + normaliser(chemin), { method: 'DELETE' });
+            const reponse = await fetch('/files/' + normaliser(chemin), { method: 'DELETE' });
             if (!reponse.ok && reponse.status !== 404) throw await erreur(reponse);
         },
 
         /** Crée un dossier, parents compris. La barre oblique finale le désigne (§22.2). */
         async creerDossier(chemin) {
-            const reponse = await fetch('/data/' + normaliser(chemin) + '/', { method: 'PUT' });
+            const reponse = await fetch('/files/' + normaliser(chemin) + '/', { method: 'PUT' });
             if (!reponse.ok) throw await erreur(reponse);
         },
 
@@ -63,18 +63,18 @@ const Proton = {
          * du contenu ne peut jamais résulter d'un oubli.
          */
         async supprimerDossier(chemin, { recursif = false } = {}) {
-            const url = '/data/' + normaliser(chemin) + '/' + (recursif ? '?recursive=1' : '');
+            const url = '/files/' + normaliser(chemin) + '/' + (recursif ? '?recursive=1' : '');
             const reponse = await fetch(url, { method: 'DELETE' });
             if (!reponse.ok && reponse.status !== 404) throw await erreur(reponse);
         },
 
         /** URL directe d'un fichier, utilisable dans un <a href> ou un <img src>. */
         url(chemin) {
-            return '/data/' + normaliser(chemin);
+            return '/files/' + normaliser(chemin);
         }
     },
 
-    /** Accès à une base SQLite de `data` (§27). */
+    /** Accès à une base SQLite de `data/db` (§27). */
     base(nom) {
         return {
             /** Lecture. Retourne { columns, rows } (§29). */
@@ -107,7 +107,7 @@ const Proton = {
      */
     async servicesDisponibles() {
         const [fichiers, sqlite] = await Promise.all([
-            disponible('/data/'),
+            disponible('/files/'),
             disponible('/api/sqlite')
         ]);
         return { fichiers, sqlite };
@@ -163,7 +163,7 @@ async function erreur(reponse) {
     return e;
 }
 
-/** Retire une éventuelle barre oblique de tête : les chemins sont relatifs à `data`. */
+/** Retire une éventuelle barre oblique de tête : les chemins sont relatifs à `data/files`. */
 function normaliser(chemin) {
     return String(chemin).replace(/^\/+/, '');
 }

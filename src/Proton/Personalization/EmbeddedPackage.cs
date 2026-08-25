@@ -20,9 +20,8 @@ namespace Proton.Personalization;
 ///
 /// <code>
 /// config.json
-/// app/...        toujours présent
-/// data/...       si le développeur l'a demandé
-/// db/...         idem
+/// app/...        toujours présent — l'application, servie depuis l'archive
+/// data/...       si le développeur l'a demandé — contenu initial de files et db
 /// </code>
 /// </summary>
 public static class EmbeddedPackage
@@ -33,7 +32,7 @@ public static class EmbeddedPackage
     public const string ConfigurationEntry = "config.json";
     public const string AppFolder = "app";
     public const string DataFolder = "data";
-    public const string DbFolder = "db";
+
 
     /// <summary>Ouvre l'archive embarquée, ou retourne null si l'exécutable n'en porte pas.</summary>
     /// <remarks>L'appelant est responsable de libérer l'archive retournée.</remarks>

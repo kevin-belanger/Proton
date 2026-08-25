@@ -11,14 +11,14 @@ namespace Proton.Tests;
 public sealed class ReservedSpacesTests
 {
     [Theory]
-    [InlineData("/data")]
-    [InlineData("/data/")]
-    [InlineData("/data/settings.json")]
-    [InlineData("/data/attachments/7/rapport.pdf")]
+    [InlineData("/files")]
+    [InlineData("/files/")]
+    [InlineData("/files/settings.json")]
+    [InlineData("/files/attachments/7/rapport.pdf")]
     [InlineData("/api")]
     [InlineData("/api/app")]
     [InlineData("/api/sqlite/todo.db/query")]
-    [InlineData("/DATA/settings.json")]
+    [InlineData("/FILES/settings.json")]
     public void Reconnait_les_espaces_reserves(string path) =>
         Assert.True(ReservedSpaces.Contains(path));
 
@@ -28,8 +28,8 @@ public sealed class ReservedSpacesTests
     [InlineData("/css/style.css")]
     // Le préfixe se compare par segment : ces chemins appartiennent à l'application,
     // même s'ils commencent par les mêmes lettres.
-    [InlineData("/database.html")]
-    [InlineData("/data-export.csv")]
+    [InlineData("/fileserver.html")]
+    [InlineData("/files-export.csv")]
     [InlineData("/apidoc.html")]
     [InlineData("/application/index.html")]
     public void Laisse_le_reste_a_l_application(string path) =>

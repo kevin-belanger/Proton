@@ -16,7 +16,7 @@ public sealed class DataApiTests : IAsyncLifetime
     private LocalWebHost _host = null!;
     private HttpClient _client = null!;
 
-    private string DataDirectory => Path.Combine(_root, "data");
+    private string DataDirectory => Path.Combine(_root, "data", "files");
 
     public async Task InitializeAsync()
     {
@@ -42,11 +42,11 @@ public sealed class DataApiTests : IAsyncLifetime
     [Fact]
     public async Task Ecrit_puis_relit_un_fichier()
     {
-        HttpResponseMessage written = await _client.PutAsync("/data/notes.txt", Body("bonjour"));
+        HttpResponseMessage written = await _client.PutAsync("/files/notes.txt", Body("bonjour"));
 
         Assert.Equal(HttpStatusCode.Created, written.StatusCode);
 
-        HttpResponseMessage read = await _client.GetAsync("/data/notes.txt");
+        HttpResponseMessage read = await _client.GetAsync("/files/notes.txt");
 
         Assert.Equal(HttpStatusCode.OK, read.StatusCode);
         Assert.Equal("bonjour", await read.Content.ReadAsStringAsync());
@@ -59,19 +59,19 @@ public sealed class DataApiTests : IAsyncLifetime
     {
         // C'est le seul avertissement d'écrasement que fournit l'API (§19).
         Assert.Equal(HttpStatusCode.Created,
-            (await _client.PutAsync("/data/x.txt", Body("un"))).StatusCode);
+            (await _client.PutAsync("/files/x.txt", Body("un"))).StatusCode);
 
         Assert.Equal(HttpStatusCode.NoContent,
-            (await _client.PutAsync("/data/x.txt", Body("deux"))).StatusCode);
+            (await _client.PutAsync("/files/x.txt", Body("deux"))).StatusCode);
 
-        Assert.Equal("deux", await _client.GetStringAsync("/data/x.txt"));
+        Assert.Equal("deux", await _client.GetStringAsync("/files/x.txt"));
     }
 
     [Fact]
     public async Task Cree_les_dossiers_parents_manquants()
     {
         HttpResponseMessage response =
-            await _client.PutAsync("/data/a/b/c/note.txt", Body("profond"));
+            await _client.PutAsync("/files/a/b/c/note.txt", Body("profond"));
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.True(File.Exists(Path.Combine(DataDirectory, "a", "b", "c", "note.txt")));
@@ -80,12 +80,12 @@ public sealed class DataApiTests : IAsyncLifetime
     [Fact]
     public async Task Repond_304_sur_requete_conditionnelle()
     {
-        await _client.PutAsync("/data/cache.txt", Body("stable"));
+        await _client.PutAsync("/files/cache.txt", Body("stable"));
 
-        HttpResponseMessage first = await _client.GetAsync("/data/cache.txt");
+        HttpResponseMessage first = await _client.GetAsync("/files/cache.txt");
         string etag = first.Headers.ETag!.ToString();
 
-        var request = new HttpRequestMessage(HttpMethod.Get, "/data/cache.txt");
+        var request = new HttpRequestMessage(HttpMethod.Get, "/files/cache.txt");
         request.Headers.TryAddWithoutValidation("If-None-Match", etag);
 
         Assert.Equal(HttpStatusCode.NotModified, (await _client.SendAsync(request)).StatusCode);
@@ -94,8 +94,8 @@ public sealed class DataApiTests : IAsyncLifetime
     [Fact]
     public async Task Determine_le_type_de_contenu()
     {
-        await _client.PutAsync("/data/page.html", Body("<p>salut</p>"));
-        HttpResponseMessage response = await _client.GetAsync("/data/page.html");
+        await _client.PutAsync("/files/page.html", Body("<p>salut</p>"));
+        HttpResponseMessage response = await _client.GetAsync("/files/page.html");
 
         Assert.Equal("text/html", response.Content.Headers.ContentType?.MediaType);
     }
@@ -104,10 +104,10 @@ public sealed class DataApiTests : IAsyncLifetime
     public async Task Force_le_telechargement_sur_demande()
     {
         // §15.1 — facultatif, à la main de l'application.
-        await _client.PutAsync("/data/rapport.pdf", Body("%PDF"));
+        await _client.PutAsync("/files/rapport.pdf", Body("%PDF"));
 
-        HttpResponseMessage sans = await _client.GetAsync("/data/rapport.pdf");
-        HttpResponseMessage avec = await _client.GetAsync("/data/rapport.pdf?download=1");
+        HttpResponseMessage sans = await _client.GetAsync("/files/rapport.pdf");
+        HttpResponseMessage avec = await _client.GetAsync("/files/rapport.pdf?download=1");
 
         Assert.Null(sans.Content.Headers.ContentDisposition);
         Assert.Equal("attachment", avec.Content.Headers.ContentDisposition?.DispositionType);
@@ -118,20 +118,20 @@ public sealed class DataApiTests : IAsyncLifetime
     [Fact]
     public async Task Supprime_un_fichier()
     {
-        await _client.PutAsync("/data/jetable.txt", Body("."));
+        await _client.PutAsync("/files/jetable.txt", Body("."));
 
         Assert.Equal(HttpStatusCode.NoContent,
-            (await _client.DeleteAsync("/data/jetable.txt")).StatusCode);
+            (await _client.DeleteAsync("/files/jetable.txt")).StatusCode);
 
         Assert.Equal(HttpStatusCode.NotFound,
-            (await _client.GetAsync("/data/jetable.txt")).StatusCode);
+            (await _client.GetAsync("/files/jetable.txt")).StatusCode);
     }
 
     [Fact]
     public async Task Repond_404_en_supprimant_un_fichier_absent()
     {
         Assert.Equal(HttpStatusCode.NotFound,
-            (await _client.DeleteAsync("/data/fantome.txt")).StatusCode);
+            (await _client.DeleteAsync("/files/fantome.txt")).StatusCode);
     }
 
     // --- §21 : listing ---------------------------------------------------------------
@@ -139,11 +139,11 @@ public sealed class DataApiTests : IAsyncLifetime
     [Fact]
     public async Task Liste_un_dossier()
     {
-        await _client.PutAsync("/data/dossier/a.txt", Body("aa"));
-        await _client.PutAsync("/data/dossier/b.txt", Body("bbbb"));
-        await _client.PutAsync("/data/dossier/sous/c.txt", Body("c"));
+        await _client.PutAsync("/files/dossier/a.txt", Body("aa"));
+        await _client.PutAsync("/files/dossier/b.txt", Body("bbbb"));
+        await _client.PutAsync("/files/dossier/sous/c.txt", Body("c"));
 
-        string json = await _client.GetStringAsync("/data/dossier/");
+        string json = await _client.GetStringAsync("/files/dossier/");
 
         Assert.Contains("\"a.txt\"", json, StringComparison.Ordinal);
         Assert.Contains("\"b.txt\"", json, StringComparison.Ordinal);
@@ -156,23 +156,23 @@ public sealed class DataApiTests : IAsyncLifetime
     {
         // Un dossier absent et un dossier vide sont deux états différents (§21).
         Assert.Equal(HttpStatusCode.NotFound,
-            (await _client.GetAsync("/data/jamais-cree/")).StatusCode);
+            (await _client.GetAsync("/files/jamais-cree/")).StatusCode);
     }
 
     [Fact]
     public async Task Redirige_un_dossier_demande_sans_barre_oblique()
     {
-        await _client.PutAsync("/data/documents/note.txt", Body("."));
+        await _client.PutAsync("/files/documents/note.txt", Body("."));
 
         using var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false })
         {
             BaseAddress = _host.Address
         };
 
-        HttpResponseMessage response = await client.GetAsync("/data/documents");
+        HttpResponseMessage response = await client.GetAsync("/files/documents");
 
         Assert.Equal(HttpStatusCode.MovedPermanently, response.StatusCode);
-        Assert.Equal("/data/documents/", response.Headers.Location?.ToString());
+        Assert.Equal("/files/documents/", response.Headers.Location?.ToString());
     }
 
     // --- §22 : dossiers ---------------------------------------------------------------
@@ -181,11 +181,11 @@ public sealed class DataApiTests : IAsyncLifetime
     public async Task Cree_un_dossier_de_maniere_idempotente()
     {
         Assert.Equal(HttpStatusCode.Created,
-            (await _client.PutAsync("/data/nouveau/", null)).StatusCode);
+            (await _client.PutAsync("/files/nouveau/", null)).StatusCode);
 
         // Recommencer n'est pas une erreur (§22.2).
         Assert.Equal(HttpStatusCode.NoContent,
-            (await _client.PutAsync("/data/nouveau/", null)).StatusCode);
+            (await _client.PutAsync("/files/nouveau/", null)).StatusCode);
 
         Assert.True(Directory.Exists(Path.Combine(DataDirectory, "nouveau")));
     }
@@ -193,9 +193,9 @@ public sealed class DataApiTests : IAsyncLifetime
     [Fact]
     public async Task Refuse_de_supprimer_un_dossier_non_vide_sans_demande_explicite()
     {
-        await _client.PutAsync("/data/plein/fichier.txt", Body("."));
+        await _client.PutAsync("/files/plein/fichier.txt", Body("."));
 
-        HttpResponseMessage response = await _client.DeleteAsync("/data/plein/");
+        HttpResponseMessage response = await _client.DeleteAsync("/files/plein/");
 
         Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         Assert.Contains("directory_not_empty", await response.Content.ReadAsStringAsync(),
@@ -208,12 +208,12 @@ public sealed class DataApiTests : IAsyncLifetime
     [Fact]
     public async Task Supprime_un_dossier_et_son_contenu_sur_demande_explicite()
     {
-        await _client.PutAsync("/data/arbre/a.txt", Body("."));
-        await _client.PutAsync("/data/arbre/sous/b.txt", Body("."));
-        await _client.PutAsync("/data/arbre/sous/encore/c.txt", Body("."));
+        await _client.PutAsync("/files/arbre/a.txt", Body("."));
+        await _client.PutAsync("/files/arbre/sous/b.txt", Body("."));
+        await _client.PutAsync("/files/arbre/sous/encore/c.txt", Body("."));
 
         Assert.Equal(HttpStatusCode.NoContent,
-            (await _client.DeleteAsync("/data/arbre/?recursive=1")).StatusCode);
+            (await _client.DeleteAsync("/files/arbre/?recursive=1")).StatusCode);
 
         Assert.False(Directory.Exists(Path.Combine(DataDirectory, "arbre")));
     }
@@ -223,7 +223,7 @@ public sealed class DataApiTests : IAsyncLifetime
     {
         // Le contenu de `data` appartient à l'application, son existence non (§22.4).
         Assert.Equal(HttpStatusCode.Forbidden,
-            (await _client.DeleteAsync("/data/?recursive=1")).StatusCode);
+            (await _client.DeleteAsync("/files/?recursive=1")).StatusCode);
 
         Assert.True(Directory.Exists(DataDirectory));
     }
@@ -231,9 +231,9 @@ public sealed class DataApiTests : IAsyncLifetime
     // --- CA-10 : confinement ----------------------------------------------------------
 
     [Theory]
-    [InlineData("/data/../../Windows/System32/config")]
-    [InlineData("/data/../app/index.html")]
-    [InlineData("/data/C:/Windows")]
+    [InlineData("/files/../../Windows/System32/config")]
+    [InlineData("/files/../app/index.html")]
+    [InlineData("/files/C:/Windows")]
     public async Task Refuse_de_sortir_du_dossier_data(string chemin)
     {
         HttpResponseMessage response = await _client.GetAsync(chemin);
@@ -289,7 +289,7 @@ public sealed class DataApiTests : IAsyncLifetime
     [Fact]
     public async Task Les_erreurs_suivent_le_format_uniforme()
     {
-        HttpResponseMessage response = await _client.GetAsync("/data/absent.txt");
+        HttpResponseMessage response = await _client.GetAsync("/files/absent.txt");
         string json = await response.Content.ReadAsStringAsync();
 
         // Le code est destiné au programme, le message aux humains (§24).

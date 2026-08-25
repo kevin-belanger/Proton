@@ -16,7 +16,8 @@ public sealed class ApplicationPaths
         Root = root;
         App = Path.Combine(root, "app");
         Data = Path.Combine(root, "data");
-        Db = Path.Combine(root, "db");
+        Files = Path.Combine(Data, "files");
+        Db = Path.Combine(Data, "db");
         Config = Path.Combine(root, "config");
     }
 
@@ -29,17 +30,27 @@ public sealed class ApplicationPaths
     /// <summary>Application Web servie à la racine du serveur HTTP (§7).</summary>
     public string App { get; }
 
-    /// <summary>Espace de stockage accessible à l'application Web (§13).</summary>
-    public string Data { get; }
-
     /// <summary>
-    /// Bases SQLite (§26).
+    /// Racine des données de l'application (§6).
     /// </summary>
     /// <remarks>
-    /// Séparé de <see cref="Data"/> et sans route qui l'expose : une base n'est
-    /// joignable que par <c>/api/sqlite</c>. Placée dans <c>data</c>, elle serait
-    /// aussi un fichier ordinaire — téléchargeable, et surtout écrasable par un
-    /// <c>PUT</c> maladroit qui la détruirait.
+    /// Elle n'est jamais exposée telle quelle : seuls ses deux sous-dossiers le sont,
+    /// et chacun par sa propre voie. Les regrouper laisse un seul dossier à côté de
+    /// l'exécutable, et fait de sa copie une sauvegarde complète.
+    /// </remarks>
+    public string Data { get; }
+
+    /// <summary>Fichiers de l'application, exposés par <c>/files</c> (§13).</summary>
+    public string Files { get; }
+
+    /// <summary>
+    /// Bases SQLite, exposées par <c>/api/sqlite</c> (§26).
+    /// </summary>
+    /// <remarks>
+    /// Séparées des fichiers et sans route qui les expose : une base n'est joignable
+    /// que par l'API SQLite. Rangée parmi les fichiers, elle serait aussi un fichier
+    /// ordinaire — téléchargeable, et surtout écrasable par un <c>PUT</c> maladroit
+    /// qui la détruirait.
     /// </remarks>
     public string Db { get; }
 

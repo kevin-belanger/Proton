@@ -70,7 +70,7 @@ public sealed class LocalWebHost : IAsyncDisposable
         MapApiBodyLimit(application);
         MapAppApi(application);
         MapSqliteApi(application, paths);
-        MapDataApi(application, paths);
+        MapFilesApi(application, paths);
         MapReservedApiSpace(application);
         MapStaticApplicationFiles(application, paths);
 
@@ -150,8 +150,8 @@ public sealed class LocalWebHost : IAsyncDisposable
     private static void MapSqliteApi(WebApplication application, ApplicationPaths paths) =>
         SqliteEndpoints.Map(application, new SqliteService(new DataPath(paths.Db)));
 
-    private static void MapDataApi(WebApplication application, ApplicationPaths paths) =>
-        DataEndpoints.Map(application, new DataFileService(new DataPath(paths.Data)));
+    private static void MapFilesApi(WebApplication application, ApplicationPaths paths) =>
+        FilesEndpoints.Map(application, new DataFileService(new DataPath(paths.Files)));
 
     /// <summary>
     /// Réserve ce qui reste de <c>/data</c> et <c>/api</c> avant tout service de

@@ -112,10 +112,7 @@ public static class ExecutableGenerator
             ];
 
             if (embedUserFolders)
-            {
                 folders.Add(new(EmbeddedPackage.DataFolder, Path.Combine(workingDirectory, EmbeddedPackage.DataFolder)));
-                folders.Add(new(EmbeddedPackage.DbFolder, Path.Combine(workingDirectory, EmbeddedPackage.DbFolder)));
-            }
 
             foreach (EmbeddedPackage.FolderSource folder in folders)
                 log.WriteLine($"Embarqué  : {folder.Name}/ — {Describe(folder.Path)}");

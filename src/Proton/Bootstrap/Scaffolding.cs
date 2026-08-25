@@ -13,7 +13,7 @@ public static class Scaffolding
 {
     /// <summary>Rapport de ce qui a réellement été créé, à des fins de diagnostic.</summary>
     public sealed record Result(
-        bool CreatedApp, bool CreatedData, bool CreatedDb, bool CreatedIndex, bool ExtractedFolders);
+        bool CreatedApp, bool CreatedData, bool CreatedIndex, bool ExtractedData);
 
     /// <summary>
     /// Prépare les dossiers de l'application (§8, §39.1).
@@ -21,11 +21,11 @@ public static class Scaffolding
     /// Deux situations, selon que l'exécutable porte une application embarquée.
     ///
     /// <b>Exécutable personnalisé.</b> Son application est servie depuis l'archive :
-    /// aucun dossier <c>app</c> n'est créé. Seuls <c>data</c> et <c>db</c> le sont, et
-    /// l'archive y dépose son contenu initial si elle en porte — mais uniquement
-    /// lorsque <b>aucun des deux</b> n'existe déjà. Une extraction partielle
-    /// mélangerait des données livrées et des données de l'utilisateur, ce qui ne se
-    /// diagnostique plus.
+    /// aucun dossier <c>app</c> n'est créé. Seul <c>data</c> l'est, avec ses deux
+    /// sous-dossiers <c>files</c> et <c>db</c>. L'archive y dépose son contenu initial
+    /// si elle en porte — mais uniquement lorsque <c>data</c> n'existe pas encore. Une
+    /// extraction partielle mélangerait des données livrées et des données de
+    /// l'utilisateur, ce qui ne se diagnostique plus.
     ///
     /// <b>Moteur générique.</b> Sans archive, <c>app</c> est créé sur le disque avec
     /// une page d'accueil : c'est le point de départ du développeur (§8).
@@ -50,25 +50,26 @@ public static class Scaffolding
             }
         }
 
-        bool extracted = TryExtractUserFolders(paths);
+        bool extracted = TryExtractData(paths);
 
         bool createdData = CreateDirectoryIfMissing(paths.Data);
-        bool createdDb = CreateDirectoryIfMissing(paths.Db);
+        CreateDirectoryIfMissing(paths.Files);
+        CreateDirectoryIfMissing(paths.Db);
 
-        return new Result(createdApp, createdData, createdDb, createdIndex, extracted);
+        return new Result(createdApp, createdData, createdIndex, extracted);
     }
 
     /// <summary>
-    /// Dépose le contenu initial de <c>data</c> et <c>db</c>, si l'archive en porte.
+    /// Dépose le contenu initial de <c>data</c>, si l'archive en porte.
     /// </summary>
     /// <remarks>
-    /// Tout ou rien : dès qu'un seul des deux dossiers existe, rien n'est extrait. Ce
-    /// que l'utilisateur a commencé lui appartient, et un mélange avec des données
-    /// livrées produirait des situations inexplicables.
+    /// Tout ou rien : dès que le dossier existe, rien n'est extrait. Ce que
+    /// l'utilisateur a commencé lui appartient, et un mélange avec des données livrées
+    /// produirait des situations inexplicables.
     /// </remarks>
-    private static bool TryExtractUserFolders(ApplicationPaths paths)
+    private static bool TryExtractData(ApplicationPaths paths)
     {
-        if (Directory.Exists(paths.Data) || Directory.Exists(paths.Db))
+        if (Directory.Exists(paths.Data))
             return false;
 
         string? executable = Environment.ProcessPath;
@@ -112,20 +113,16 @@ public static class Scaffolding
     {
         string name = entryName.Replace('\\', '/');
 
-        // Une entrée ne doit jamais désigner autre chose que data ou db : le contenu
-        // de l'archive provient d'une machine de développement, pas d'une source sûre.
+        // Une entrée ne doit jamais désigner autre chose que `data` : le contenu de
+        // l'archive provient d'une machine de développement, pas d'une source sûre.
         if (name.Contains("../", StringComparison.Ordinal))
             return null;
 
         string prefix = Personalization.EmbeddedPackage.DataFolder + "/";
-        if (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            return Path.Combine(paths.Data, name[prefix.Length..].Replace('/', Path.DirectorySeparatorChar));
 
-        prefix = Personalization.EmbeddedPackage.DbFolder + "/";
-        if (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-            return Path.Combine(paths.Db, name[prefix.Length..].Replace('/', Path.DirectorySeparatorChar));
-
-        return null;
+        return name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+            ? Path.Combine(paths.Data, name[prefix.Length..].Replace('/', Path.DirectorySeparatorChar))
+            : null;
     }
 
     private static bool CreateDirectoryIfMissing(string path)
@@ -257,8 +254,8 @@ public static class Scaffolding
             </p>
             <p class="discret">
                 Pour commencer, remplacez le contenu du dossier <code>app</code> par
-                le vôtre. Vos fichiers vont dans <code>data</code>, vos bases de
-                données dans <code>db</code>.
+                le vôtre. Vos fichiers vont dans <code>data/files</code>, vos bases
+                de données dans <code>data/db</code>.
             </p>
 
             <h2>Services</h2>
@@ -274,7 +271,7 @@ public static class Scaffolding
         <script>
         const services = [
             { url: '/api/app',            nom: 'Configuration',   chemin: '/api/app' },
-            { url: '/data/',              nom: 'Fichiers',        chemin: '/data' },
+            { url: '/files/',             nom: 'Fichiers',        chemin: '/files' },
             { url: '/api/sqlite',         nom: 'Bases SQLite',    chemin: '/api/sqlite' }
         ];
 

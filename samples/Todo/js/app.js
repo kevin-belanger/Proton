@@ -3,7 +3,7 @@
 // Elle exerce délibérément toutes les capacités de Proton V1 :
 //   — /api/app    identité de l'application
 //   — /api/sqlite les tâches
-//   — /data       les pièces jointes, y compris le listing d'un dossier
+//   — /files      les pièces jointes, y compris le listing d'un dossier
 
 const base = Proton.base('todo.db');
 

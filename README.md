@@ -19,8 +19,9 @@ L'application Web est embarquée dans l'exécutable. Au premier démarrage, celu
 ```text
 MonApplication/
 ├── MonApplication.exe
-├── data/    ses fichiers
-└── db/      ses bases SQLite
+└── data/
+    ├── files/    ses fichiers
+    └── db/       ses bases SQLite
 ```
 
 Ni installateur, ni serveur, ni runtime à installer séparément.
@@ -52,13 +53,13 @@ Aucune bibliothèque n'est requise — tout passe par `fetch`.
 const app = await (await fetch('/api/app')).json();
 
 // Fichiers
-await fetch('/data/notes.txt', { method: 'PUT', body: 'bonjour' });
-const texte = await (await fetch('/data/notes.txt')).text();
-const { entries } = await (await fetch('/data/dossier/')).json();
+await fetch('/files/notes.txt', { method: 'PUT', body: 'bonjour' });
+const texte = await (await fetch('/files/notes.txt')).text();
+const { entries } = await (await fetch('/files/dossier/')).json();
 
 // Dossiers — la barre oblique finale les désigne
-await fetch('/data/photos/', { method: 'PUT' });
-await fetch('/data/photos/?recursive=1', { method: 'DELETE' });
+await fetch('/files/photos/', { method: 'PUT' });
+await fetch('/files/photos/?recursive=1', { method: 'DELETE' });
 
 // SQLite
 await fetch('/api/sqlite/app.db/execute', {
@@ -97,7 +98,7 @@ Proton.exe /config
 Vous obtenez `GestionInventaire.exe` : même moteur, avec son nom, son icône, ses
 métadonnées Windows **et votre application embarquée**. `Proton.exe` reste intact.
 
-Distribuez ce fichier, et rien d'autre. `data` et `db` se créent au premier démarrage.
+Distribuez ce fichier, et rien d'autre. `data` se crée au premier démarrage.
 
 Pour livrer un contenu initial — modèles, catalogue, base pré-remplie — ajoutez le
 paramètre `data` :
@@ -106,8 +107,8 @@ paramètre `data` :
 Proton.exe /config data
 ```
 
-Il embarque aussi `data/` et `db/`, déposés au premier démarrage si aucun des deux
-n'existe encore.
+Il embarque aussi `data/`, déposé au premier démarrage si ce dossier
+n'existe pas encore.
 
 ---
 

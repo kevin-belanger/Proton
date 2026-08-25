@@ -177,7 +177,7 @@ public sealed class SqliteApiTests : IAsyncLifetime
             "/api/sqlite/jamais-vue.db/query", new { sql = "SELECT 1" });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.False(File.Exists(Path.Combine(_root, "db", "jamais-vue.db")));
+        Assert.False(File.Exists(Path.Combine(_root, "data", "db", "jamais-vue.db")));
     }
 
     [Fact]
@@ -185,7 +185,7 @@ public sealed class SqliteApiTests : IAsyncLifetime
     {
         await Execute("CREATE TABLE t (x INTEGER)");
 
-        Assert.True(File.Exists(Path.Combine(_root, "db", "app.db")));
+        Assert.True(File.Exists(Path.Combine(_root, "data", "db", "app.db")));
     }
 
     [Fact]
@@ -197,14 +197,14 @@ public sealed class SqliteApiTests : IAsyncLifetime
         // séparation, un PUT maladroit sur app.db la détruirait, et un GET la
         // livrerait comme un fichier ordinaire.
         Assert.Equal(HttpStatusCode.NotFound,
-            (await _client.GetAsync("/data/app.db")).StatusCode);
+            (await _client.GetAsync("/files/app.db")).StatusCode);
 
         // Le dossier des bases n'est pas davantage accessible.
         Assert.Equal(HttpStatusCode.NotFound,
-            (await _client.GetAsync("/data/../db/app.db")).StatusCode);
+            (await _client.GetAsync("/files/../db/app.db")).StatusCode);
 
         // Et il n'apparaît pas dans le contenu de `data`.
-        string listing = await _client.GetStringAsync("/data/");
+        string listing = await _client.GetStringAsync("/files/");
         Assert.DoesNotContain("app.db", listing, StringComparison.Ordinal);
     }
 
@@ -215,7 +215,7 @@ public sealed class SqliteApiTests : IAsyncLifetime
             "/api/sqlite/bases/inventaire.db/execute", new { sql = "CREATE TABLE t (x INTEGER)" });
 
         Assert.True(response.IsSuccessStatusCode);
-        Assert.True(File.Exists(Path.Combine(_root, "db", "bases", "inventaire.db")));
+        Assert.True(File.Exists(Path.Combine(_root, "data", "db", "bases", "inventaire.db")));
     }
 
     // --- §26 et §34 : confinement --------------------------------------------------------

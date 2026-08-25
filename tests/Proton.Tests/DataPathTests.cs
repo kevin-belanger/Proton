@@ -18,8 +18,8 @@ public sealed class DataPathTests : IDisposable
 
     public DataPathTests()
     {
-        Directory.CreateDirectory(Path.Combine(_root, "data"));
-        _paths = new DataPath(Path.Combine(_root, "data"));
+        Directory.CreateDirectory(Path.Combine(_root, "data", "files"));
+        _paths = new DataPath(Path.Combine(_root, "data", "files"));
     }
 
     public void Dispose()

@@ -26,7 +26,7 @@ public sealed class ScaffoldingTests : IDisposable
         Scaffolding.Result result = Scaffolding.Ensure(Paths, hasEmbeddedApp: false);
 
         Assert.True(Directory.Exists(Paths.App));
-        Assert.True(Directory.Exists(Paths.Data));
+        Assert.True(Directory.Exists(Paths.Files));
         Assert.True(result.CreatedApp);
         Assert.True(result.CreatedData);
     }

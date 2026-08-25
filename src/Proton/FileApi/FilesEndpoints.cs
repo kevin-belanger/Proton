@@ -12,7 +12,7 @@ namespace Proton.FileApi;
 /// le résultat — ou l'échec — en code HTTP et en corps de réponse. Aucune logique de
 /// fichier ne lui appartient (§47).
 /// </summary>
-public static class DataEndpoints
+public static class FilesEndpoints
 {
     private static readonly FileExtensionContentTypeProvider ContentTypes = new();
 
@@ -29,7 +29,7 @@ public static class DataEndpoints
     {
         application.Use(async (context, next) =>
         {
-            if (!context.Request.Path.StartsWithSegments("/data"))
+            if (!context.Request.Path.StartsWithSegments("/files"))
             {
                 await next(context).ConfigureAwait(false);
                 return;
@@ -44,8 +44,8 @@ public static class DataEndpoints
         // Le chemin complet est utilisé plutôt que le paramètre de route : celui-ci
         // perd la barre oblique finale, qui distingue un dossier d'un fichier (§22.1).
         string requestPath = context.Request.Path.Value ?? string.Empty;
-        string relative = requestPath.Length > "/data".Length
-            ? requestPath["/data".Length..]
+        string relative = requestPath.Length > "/files".Length
+            ? requestPath["/files".Length..]
             : string.Empty;
 
         DataPathResult path = service.Paths.Resolve(relative);
@@ -75,7 +75,7 @@ public static class DataEndpoints
                 default:
                     context.Response.Headers.Allow = "GET, HEAD, PUT, DELETE";
                     await ApiError.WriteAsync(context, StatusCodes.Status405MethodNotAllowed,
-                        ApiError.MethodNotAllowed, "This method is not supported on /data.");
+                        ApiError.MethodNotAllowed, "This method is not supported on /files.");
                     return;
             }
         }
@@ -110,7 +110,7 @@ public static class DataEndpoints
         // sa forme canonique plutôt que traité comme introuvable (§22.1).
         if (kind == EntryKind.Directory)
         {
-            context.Response.Redirect($"/data/{path.RelativePath}/", permanent: true);
+            context.Response.Redirect($"/files/{path.RelativePath}/", permanent: true);
             return;
         }
 
