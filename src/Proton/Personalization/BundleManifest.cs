@@ -40,7 +40,7 @@ public sealed class BundleManifest
         int count = r.Int32();
 
         if (major is 0 or > 100 || count < 0 || count > 100_000)
-            throw new InvalidDataException($"Manifeste de bundle incohérent (version {major}.{minor}, {count} entrées).");
+            throw new InvalidDataException($"Inconsistent bundle manifest (version {major}.{minor}, {count} entries).");
 
         string bundleId = r.String7Bit();
 
@@ -130,7 +130,7 @@ public sealed class BundleManifest
                 len |= (b & 0x7F) << shift;
                 if ((b & 0x80) == 0) break;
                 shift += 7;
-                if (shift > 28) throw new InvalidDataException("Longueur de chaîne invalide dans le manifeste.");
+                if (shift > 28) throw new InvalidDataException("Invalid string length in the manifest.");
             }
             string s = Encoding.UTF8.GetString(buf, _p, len);
             _p += len;

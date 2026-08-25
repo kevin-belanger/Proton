@@ -40,11 +40,11 @@ public sealed class PeInfo
     public static PeInfo Read(byte[] b, long fileLength)
     {
         if (b.Length < 0x40 || b[0] != 'M' || b[1] != 'Z')
-            throw new InvalidDataException("Signature DOS 'MZ' absente.");
+            throw new InvalidDataException("DOS signature 'MZ' is missing.");
 
         int peOffset = BinaryPrimitives.ReadInt32LittleEndian(b.AsSpan(0x3C));
         if (b[peOffset] != 'P' || b[peOffset + 1] != 'E')
-            throw new InvalidDataException("Signature 'PE\0\0' absente.");
+            throw new InvalidDataException("Signature 'PE\0\0' is missing.");
 
         int coff = peOffset + 4;
         int numberOfSections = BinaryPrimitives.ReadUInt16LittleEndian(b.AsSpan(coff + 2));

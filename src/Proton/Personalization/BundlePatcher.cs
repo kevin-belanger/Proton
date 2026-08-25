@@ -29,7 +29,7 @@ public static class BundlePatcher
         var info = PeInfo.Read(stripped, stripped.LongLength);
 
         if (!info.IsSingleFileBundle)
-            throw new InvalidOperationException("L'exécutable source ne contient pas de bundle single-file.");
+            throw new InvalidOperationException("The source executable holds no single-file bundle.");
 
         long oldPeEnd = info.PeEnd;
         byte[] peOnly = stripped[..(int)oldPeEnd];
@@ -52,7 +52,7 @@ public static class BundlePatcher
         var newInfo = PeInfo.Read(newPe, newPe.LongLength);
         if (newInfo.PeEnd != newPe.Length)
             throw new InvalidOperationException(
-                $"Le PE patché contient {newPe.Length - newInfo.PeEnd} octets inattendus après ses sections.");
+                $"The patched PE holds {newPe.Length - newInfo.PeEnd} unexpected bytes after its sections.");
 
         // --- Choix du décalage : multiple de la page, pour préserver l'alignement ---
         long rawDelta = newPe.Length - oldPeEnd;
@@ -67,7 +67,7 @@ public static class BundlePatcher
         // --- Réécriture du pointeur global vers le manifeste ---
         long sigOffset = PeInfo.IndexOf(result, PeInfo.BundleSignature);
         if (sigOffset < 8)
-            throw new InvalidOperationException("Signature de bundle introuvable dans le PE patché.");
+            throw new InvalidOperationException("No bundle signature found in the patched PE.");
 
         long newHeaderOffset = info.BundleHeaderOffset + delta;
         BinaryPrimitives.WriteInt64LittleEndian(result.AsSpan((int)sigOffset - 8), newHeaderOffset);

@@ -40,7 +40,7 @@ internal static class Program
 
         Application.ThreadException += (_, e) =>
         {
-            DiagnosticLog.Error("Exception sur le thread de l'interface.", e.Exception);
+            DiagnosticLog.Error("Exception on the interface thread.", e.Exception);
             ErrorDialog.ShowStartupFailure(e.Exception);
         };
 
@@ -48,7 +48,7 @@ internal static class Program
         {
             // Le processus s'arrête juste après : le journal est le seul témoin qui
             // subsistera.
-            DiagnosticLog.Error("Exception non gérée.", e.ExceptionObject as Exception);
+            DiagnosticLog.Error("Unhandled exception.", e.ExceptionObject as Exception);
         };
     }
 
@@ -85,7 +85,7 @@ internal static class Program
 
         // Lancé par double-clic : sans console, la boîte de dialogue est le seul
         // canal disponible (§54).
-        MessageBox.Show(report, "Proton — mode /config", MessageBoxButtons.OK,
+        MessageBox.Show(report, "Proton — /config", MessageBoxButtons.OK,
             result.Success ? MessageBoxIcon.Information : MessageBoxIcon.Error);
 
         return result.Success ? 0 : 2;

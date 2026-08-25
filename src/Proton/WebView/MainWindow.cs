@@ -90,7 +90,7 @@ public sealed class MainWindow : Form
         catch (Exception ex) when (ex is WebView2RuntimeNotFoundException or DllNotFoundException)
         {
             throw new WebViewUnavailableException(
-                "Aucun environnement WebView2 utilisable n'a été trouvé sur cet ordinateur.", ex);
+                "No usable WebView2 environment was found on this computer.", ex);
         }
 
         await _webView.EnsureCoreWebView2Async(environment).ConfigureAwait(true);

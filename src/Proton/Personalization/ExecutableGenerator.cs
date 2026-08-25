@@ -43,10 +43,10 @@ public static class ExecutableGenerator
 
         if (!Directory.Exists(appPath))
             return new GenerationResult(false,
-                $"« {appPath} » est introuvable. L'application à embarquer doit exister.");
+                $"\"{appPath}\" was not found. The application to embed must exist.");
 
         if (!File.Exists(configPath))
-            return new GenerationResult(false, $"« {configPath} » est introuvable.");
+            return new GenerationResult(false, $"\"{configPath}\" was not found.");
 
         ConfigFile? file;
         try
@@ -55,11 +55,11 @@ public static class ExecutableGenerator
         }
         catch (JsonException ex)
         {
-            return new GenerationResult(false, $"config.json est illisible : {ex.Message}");
+            return new GenerationResult(false, $"config.json could not be read: {ex.Message}");
         }
 
         if (string.IsNullOrWhiteSpace(file?.Name) || string.IsNullOrWhiteSpace(file.ExecutableName))
-            return new GenerationResult(false, "« name » et « executableName » sont obligatoires.");
+            return new GenerationResult(false, "\"name\" and \"executableName\" are required.");
 
         string targetName = file.ExecutableName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
             ? file.ExecutableName
@@ -68,14 +68,14 @@ public static class ExecutableGenerator
         string target = Path.Combine(workingDirectory, targetName);
 
         if (string.Equals(Path.GetFullPath(target), Path.GetFullPath(selfPath), StringComparison.OrdinalIgnoreCase))
-            return new GenerationResult(false, "La cible est l'exécutable source ; un exécutable ne se modifie jamais lui-même.");
+            return new GenerationResult(false, "The target is the source executable; an executable never modifies itself.");
 
-        log.WriteLine($"Cible     : {target}");
+        log.WriteLine($"Target    : {target}");
 
         string? icon = File.Exists(iconPath) ? iconPath : null;
         log.WriteLine(icon is null
-            ? "Icône     : aucune (config/icon.ico absent)"
-            : $"Icône     : {new FileInfo(iconPath).Length:N0} octets");
+            ? "Icon      : none (config/icon.ico not found)"
+            : $"Icon      : {new FileInfo(iconPath).Length:N0} bytes");
 
         var configuration = new AppConfiguration
         {
@@ -99,12 +99,12 @@ public static class ExecutableGenerator
                 source, icon, BuildVersionFields(file, targetName),
                 Path.GetDirectoryName(temporary)!, out BundlePatcher.Report report);
 
-            log.WriteLine($"Décalage  : {report.Delta:+#,##0;-#,##0;0} octets, "
-                        + $"remplissage {report.Padding:N0}, "
-                        + $"{report.RebasedFields} décalages réécrits pour {report.EmbeddedFiles} fichiers");
+            log.WriteLine($"Shift     : {report.Delta:+#,##0;-#,##0;0} bytes, "
+                        + $"{report.Padding:N0} padding, "
+                        + $"{report.RebasedFields} offsets rewritten for {report.EmbeddedFiles} files");
 
             if (!report.AlignmentPreserved)
-                return new GenerationResult(false, "L'alignement des assemblies n'a pas été préservé.");
+                return new GenerationResult(false, "Assembly alignment was not preserved.");
 
             List<EmbeddedPackage.FolderSource> folders =
             [
@@ -115,12 +115,12 @@ public static class ExecutableGenerator
                 folders.Add(new(EmbeddedPackage.DataFolder, Path.Combine(workingDirectory, EmbeddedPackage.DataFolder)));
 
             foreach (EmbeddedPackage.FolderSource folder in folders)
-                log.WriteLine($"Embarqué  : {folder.Name}/ — {Describe(folder.Path)}");
+                log.WriteLine($"Embedded  : {folder.Name}/ — {Describe(folder.Path)}");
 
             byte[] final = EmbeddedPackage.Append(personalized, configuration, folders);
             File.WriteAllBytes(temporary, final);
 
-            log.WriteLine($"Archive   : {final.Length - personalized.Length:N0} octets");
+            log.WriteLine($"Archive   : {final.Length - personalized.Length:N0} bytes");
 
             GenerationResult? failure = Verify(temporary, configuration, report);
             if (failure is not null)
@@ -135,13 +135,13 @@ public static class ExecutableGenerator
                 // Cause la plus fréquente et de loin : l'application cible tourne
                 // encore. Le message du système ne le dit pas.
                 return new GenerationResult(false,
-                    $"« {targetName} » n'a pas pu être remplacé. "
-                    + "L'application est-elle encore en cours d'exécution ?");
+                    $"\"{targetName}\" could not be replaced. "
+                    + "Is the application still running?");
             }
 
-            log.WriteLine($"Vérifié   : bundle cohérent, configuration relue");
+            log.WriteLine("Verified  : bundle consistent, configuration read back");
             return new GenerationResult(true,
-                $"{targetName} généré ({new FileInfo(target).Length:N0} octets).", target);
+                $"{targetName} generated ({new FileInfo(target).Length:N0} bytes).", target);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or InvalidDataException)
         {
@@ -171,7 +171,7 @@ public static class ExecutableGenerator
         var info = PeInfo.Read(bytes, bytes.LongLength);
 
         if (!info.IsSingleFileBundle || info.BundleHeaderOffset >= EmbeddedPackage.PayloadLength(bytes))
-            return new GenerationResult(false, "Le bundle du fichier produit est incohérent.");
+            return new GenerationResult(false, "The bundle of the generated file is inconsistent.");
 
         try
         {
@@ -179,32 +179,32 @@ public static class ExecutableGenerator
 
             if (manifest.Entries.Count != report.EmbeddedFiles)
                 return new GenerationResult(false,
-                    $"Le manifeste produit contient {manifest.Entries.Count} fichiers "
-                    + $"au lieu de {report.EmbeddedFiles}.");
+                    $"The generated manifest holds {manifest.Entries.Count} files "
+                    + $"instead of {report.EmbeddedFiles}.");
         }
         catch (Exception ex) when (ex is InvalidDataException or IndexOutOfRangeException or ArgumentOutOfRangeException)
         {
-            return new GenerationResult(false, $"Le manifeste produit est illisible : {ex.Message}");
+            return new GenerationResult(false, $"The generated manifest could not be read: {ex.Message}");
         }
 
         AppConfiguration? relu = EmbeddedPackage.ReadConfiguration(path);
 
         return relu?.Name == expected.Name
             ? null
-            : new GenerationResult(false, "La configuration embarquée n'a pas pu être relue.");
+            : new GenerationResult(false, "The embedded configuration could not be read back.");
     }
 
     /// <summary>Résumé lisible du contenu d'un dossier à embarquer.</summary>
     private static string Describe(string path)
     {
         if (!Directory.Exists(path))
-            return "absent";
+            return "missing";
 
         FileInfo[] files = new DirectoryInfo(path).GetFiles("*", SearchOption.AllDirectories);
 
         return files.Length == 0
-            ? "vide"
-            : $"{files.Length} fichier(s), {files.Sum(f => f.Length):N0} octets";
+            ? "empty"
+            : $"{files.Length} file(s), {files.Sum(f => f.Length):N0} bytes";
     }
 
     private static VersionInfo.Fields BuildVersionFields(ConfigFile file, string targetName) => new()

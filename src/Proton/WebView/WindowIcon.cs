@@ -36,7 +36,7 @@ public static class WindowIcon
         }
         catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException)
         {
-            DiagnosticLog.Error("L'icône de l'exécutable n'a pas pu être lue.", ex);
+            DiagnosticLog.Error("The executable icon could not be read.", ex);
             return null;
         }
     }

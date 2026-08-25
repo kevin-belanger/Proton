@@ -68,13 +68,13 @@ public sealed class ApplicationPaths
 
         if (string.IsNullOrEmpty(executablePath))
             throw new InvalidOperationException(
-                "L'emplacement de l'exécutable n'a pas pu être déterminé.");
+                "The location of the executable could not be determined.");
 
         string? root = Path.GetDirectoryName(executablePath);
 
         if (string.IsNullOrEmpty(root))
             throw new InvalidOperationException(
-                $"L'exécutable « {executablePath} » n'a pas de dossier parent.");
+                $"The executable \"{executablePath}\" has no parent folder.");
 
         return new ApplicationPaths(executablePath, root);
     }

@@ -464,11 +464,22 @@ await fetch('/files/reports/?recursive=1', { method: 'DELETE' });   // and its c
     <li>
         <h3>Package it</h3>
         <p>From a command prompt in that folder:</p>
-<pre class="shell"><code>Proton.exe /config</code></pre>
+<pre class="shell"><code>Proton.exe /config
+
+<span class="dim">Source    : C:\Workshop\Proton.exe
+Config    : C:\Workshop\config\config.json
+Target    : C:\Workshop\ProtonTodo.exe
+Icon      : 23,947 bytes
+Shift     : -69,632 bytes, 512 padding, 353 offsets rewritten for 351 files
+Embedded  : app/ — 4 file(s), 19,829 bytes
+Archive   : 7,003 bytes
+Verified  : bundle consistent, configuration read back
+
+ProtonTodo.exe generated (62,918,079 bytes).</span></code></pre>
         <p>
-            Proton reports what it embedded and what it wrote, and finishes on the
-            name and size of the file it produced —
-            <code>ProtonTodo.exe</code>, about 63 MB.
+            Nothing is written until that last line: Proton builds the file under a
+            temporary name, checks that its bundle is intact and that the embedded
+            configuration reads back, and only then puts it in place.
         </p>
     </li>
     <li>

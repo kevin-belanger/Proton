@@ -100,7 +100,7 @@ public static class Scaffolding
         }
         catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
         {
-            Infrastructure.DiagnosticLog.Error("Le contenu initial n'a pas pu être extrait.", ex);
+            Infrastructure.DiagnosticLog.Error("The initial content could not be extracted.", ex);
             return false;
         }
     }

@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 1.8
+**Version du document :** 1.9
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 1.9 — règle de langue : tout ce que Proton dit à son utilisateur passe en anglais (§63.2).
 * 1.8 — la documentation d'utilisation est publiée par GitHub Pages (§63.1); la page d'accueil y renvoie au lieu de la reprendre (§8.1).
 * 1.7 — la page d'accueil devenait la documentation elle-même. Essayé, puis abandonné en 1.8.
 * 1.6 — licence MIT retenue, et son attribution portée par les exécutables générés (§45.1).
@@ -2372,20 +2373,12 @@ La compilation initiale sera réalisée sur Windows.
 
 ## 63.1 Documentation d'utilisation
 
-Le dépôt porte deux documentations, qui ne s'adressent pas aux mêmes lecteurs et ne
-doivent pas se confondre :
+Le fichier `docs/index.html` présente le moteur à qui n'en a jamais entendu parler,
+décrit les trois API, et conduit pas à pas jusqu'à la génération d'un exécutable à
+partir de l'exemple. Il ne se confond pas avec le présent document, qui s'adresse à
+qui construit Proton et non à qui l'utilise.
 
-| | Pour qui | Langue |
-| --- | --- | --- |
-| Ce document et `docs/*.md` | qui construit Proton | français |
-| `docs/index.html` | qui **utilise** Proton | anglais |
-
-La seconde présente le moteur à qui n'en a jamais entendu parler, décrit les trois API,
-et conduit pas à pas jusqu'à la génération d'un exécutable à partir de l'exemple.
-L'anglais est retenu parce qu'elle s'adresse au même public que `samples`, dont les
-interfaces et les commentaires le sont également.
-
-Elle est publiée par **GitHub Pages**, servie depuis le dossier `docs` de la branche
+Il est publié par **GitHub Pages**, servi depuis le dossier `docs` de la branche
 principale, à l'adresse `https://kevin-belanger.github.io/Proton/`.
 
 Deux conséquences pratiques :
@@ -2398,6 +2391,30 @@ Deux conséquences pratiques :
   Pages produit un vrai `text/html`.
 
 La page d'accueil du moteur y renvoie par un lien, sans en reprendre le contenu (§8.1).
+
+## 63.2 Règle de langue
+
+Tout ce que Proton adresse à son utilisateur est en **anglais**; tout ce que le projet
+dit de lui-même est en **français**.
+
+| | Pour qui | Langue |
+| --- | --- | --- |
+| Ce document, `docs/*.md`, `prototypes/` | qui construit Proton | français |
+| Commentaires du code | qui le modifie | français |
+| `docs/index.html` et `samples/` | qui **utilise** Proton | anglais |
+| Sortie de `/config`, boîtes de dialogue, messages d'erreur des API | l'utilisateur | anglais |
+| Journal de diagnostic | l'utilisateur, que la documentation y envoie | anglais |
+
+La frontière passe au niveau de la chaîne de caractères, pas du fichier : un même
+fichier source porte des commentaires français et des messages anglais. Le critère est
+simple — si un utilisateur peut le lire, c'est de l'anglais.
+
+Le journal relève de cette règle bien qu'il ne soit pas une interface : la
+documentation dirige explicitement le lecteur vers
+`%LOCALAPPDATA%\Proton\logs\proton.log` en cas de problème (§56).
+
+Une exception : `BundleManifest.Dump` et `PeInfo.Dump` restent en français. Ils ne sont
+appelés que depuis `prototypes/` et n'atteignent jamais un utilisateur.
 
 ---
 

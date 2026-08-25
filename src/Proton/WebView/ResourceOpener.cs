@@ -33,11 +33,11 @@ public static class ResourceOpener
         }
         catch (Exception ex) when (ex is HttpRequestException or IOException or TaskCanceledException or UnauthorizedAccessException)
         {
-            DiagnosticLog.Error($"Impossible d'ouvrir « {uri.AbsolutePath} ».", ex);
+            DiagnosticLog.Error($"Could not open \"{uri.AbsolutePath}\".", ex);
 
             MessageBox.Show(
                 $"""
-                 Le fichier n'a pas pu être ouvert.
+                 The file could not be opened.
 
                  {ex.Message}
                  """,
@@ -60,7 +60,7 @@ public static class ResourceOpener
             await response.Content.CopyToAsync(file).ConfigureAwait(true);
         }
 
-        DiagnosticLog.Info($"Ressource téléchargée : {uri.AbsolutePath} → {destination}");
+        DiagnosticLog.Info($"Resource downloaded: {uri.AbsolutePath} → {destination}");
         return destination;
     }
 

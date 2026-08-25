@@ -77,7 +77,7 @@ public sealed class LocalWebHost : IAsyncDisposable
         await application.StartAsync(cancellationToken).ConfigureAwait(false);
 
         Uri address = ResolveAddress(application);
-        DiagnosticLog.Info($"Serveur démarré sur {address} — application : {paths.App}");
+        DiagnosticLog.Info($"Server started on {address} — application: {paths.App}");
 
         return new LocalWebHost(application, address);
     }
@@ -106,7 +106,7 @@ public sealed class LocalWebHost : IAsyncDisposable
             catch (Exception ex)
             {
                 DiagnosticLog.Error(
-                    $"Exception non gérée sur {context.Request.Method} {context.Request.Path}", ex);
+                    $"Unhandled exception on {context.Request.Method} {context.Request.Path}", ex);
 
                 // Les en-têtes peuvent être déjà partis si la réponse avait commencé.
                 if (context.Response.HasStarted)
@@ -212,7 +212,7 @@ public sealed class LocalWebHost : IAsyncDisposable
 
         if (string.IsNullOrEmpty(address))
             throw new InvalidOperationException(
-                "Kestrel a démarré sans exposer d'adresse d'écoute.");
+                "Kestrel started without exposing a listening address.");
 
         // Kestrel annonce « http://127.0.0.1:48723 ». L'URI de base doit se terminer
         // par une barre oblique pour que la WebView charge bien la racine.
@@ -227,12 +227,12 @@ public sealed class LocalWebHost : IAsyncDisposable
         try
         {
             await _application.StopAsync(TimeSpan.FromSeconds(5)).ConfigureAwait(false);
-            DiagnosticLog.Info($"Serveur arrêté, port {Address.Port} libéré.");
+            DiagnosticLog.Info($"Server stopped, port {Address.Port} released.");
         }
         catch (Exception ex)
         {
             // L'arrêt du serveur ne doit jamais empêcher la fermeture du processus.
-            DiagnosticLog.Error("L'arrêt du serveur a échoué.", ex);
+            DiagnosticLog.Error("Stopping the server failed.", ex);
         }
 
         await _application.DisposeAsync().ConfigureAwait(false);

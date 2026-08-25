@@ -16,24 +16,24 @@ internal static class ErrorDialog
     private const string Caption = "Proton";
 
     public static void ShowStartupFailure(Exception exception) =>
-        Report("Proton n'a pas pu démarrer.", exception, $"""
-             Proton n'a pas pu démarrer.
+        Report("Proton could not start.", exception, $"""
+             Proton could not start.
 
              {exception.Message}
 
-             Détail technique :
+             Technical detail:
              {exception}
              """);
 
     public static void ShowWebViewFailure(Exception exception) =>
-        Report("Proton n'a pas pu afficher sa fenêtre.", exception, $"""
-             Proton n'a pas pu afficher sa fenêtre.
+        Report("Proton could not display its window.", exception, $"""
+             Proton could not display its window.
 
              {exception.Message}
 
-             Cette application requiert Microsoft Edge WebView2, présent sur la
-             plupart des installations récentes de Windows. Il peut être installé
-             depuis le site de Microsoft.
+             This application requires Microsoft Edge WebView2, present on most
+             recent Windows installations. It can be installed from Microsoft's
+             website.
              """);
 
     private static void Report(string summary, Exception exception, string dialogMessage)

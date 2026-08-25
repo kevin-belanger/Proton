@@ -51,7 +51,7 @@ public static class ResourcePatcher
 
         if (handle == IntPtr.Zero)
             throw new InvalidOperationException(
-                $"L'ouverture des ressources a échoué (Win32 {Marshal.GetLastWin32Error()}).");
+                $"Opening the resources failed (Win32 {Marshal.GetLastWin32Error()}).");
 
         try
         {
@@ -72,7 +72,7 @@ public static class ResourcePatcher
 
         if (!EndUpdateResourceW(handle, fDiscard: false))
             throw new InvalidOperationException(
-                $"L'écriture des ressources a échoué (Win32 {Marshal.GetLastWin32Error()}).");
+                $"Writing the resources failed (Win32 {Marshal.GetLastWin32Error()}).");
     }
 
     private static void WriteIcon(IntPtr handle, byte[] ico)
@@ -91,7 +91,7 @@ public static class ResourcePatcher
     {
         if (!UpdateResourceW(handle, type, id, language, data, (uint)data.Length))
             throw new InvalidOperationException(
-                $"La mise à jour d'une ressource a échoué (Win32 {Marshal.GetLastWin32Error()}).");
+                $"Updating a resource failed (Win32 {Marshal.GetLastWin32Error()}).");
     }
 
     public record IconEntry(byte Width, byte Height, byte ColorCount, byte Reserved,
@@ -101,11 +101,11 @@ public static class ResourcePatcher
     public static (List<IconEntry> Entries, List<byte[]> Images) ParseIco(byte[] ico)
     {
         if (ico.Length < 6 || BinaryPrimitives.ReadUInt16LittleEndian(ico.AsSpan(2)) != 1)
-            throw new InvalidDataException("Fichier ICO invalide : type attendu 1.");
+            throw new InvalidDataException("Invalid ICO file: expected type 1.");
 
         int count = BinaryPrimitives.ReadUInt16LittleEndian(ico.AsSpan(4));
         if (count == 0)
-            throw new InvalidDataException("Fichier ICO sans image.");
+            throw new InvalidDataException("The ICO file holds no image.");
 
         var entries = new List<IconEntry>(count);
         var images = new List<byte[]>(count);
@@ -117,7 +117,7 @@ public static class ResourcePatcher
             uint offset = BinaryPrimitives.ReadUInt32LittleEndian(ico.AsSpan(e + 12));
 
             if (offset + bytesInRes > ico.Length)
-                throw new InvalidDataException($"Image {i} hors limites du fichier ICO.");
+                throw new InvalidDataException($"Image {i} falls outside the ICO file.");
 
             entries.Add(new IconEntry(
                 ico[e], ico[e + 1], ico[e + 2], ico[e + 3],
