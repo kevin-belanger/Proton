@@ -143,10 +143,11 @@ dotnet publish src/Proton/Proton.csproj -c Release
 L'exécutable est produit dans **`C:\proton\dist\Proton.exe`**, et les artefacts
 intermédiaires dans `C:\proton\build`.
 
-Les sorties ne restent volontairement pas dans le dépôt : celui-ci est synchronisé
-par Google Drive, et une publication self-contained y pousserait plusieurs dizaines
-de mégaoctets à chaque build. La racine de sortie se change par la variable
-d'environnement `PROTON_OUTPUT_ROOT`.
+Les sorties ne restent volontairement pas dans le dépôt : une publication
+self-contained pèse une soixantaine de mégaoctets, ce qui encombre l'arbre de travail
+et devient franchement gênant lorsque le dossier est synchronisé par un service de
+stockage en ligne. La racine de sortie se change par la variable d'environnement
+`PROTON_OUTPUT_ROOT`.
 
 ```bash
 dotnet test

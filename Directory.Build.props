@@ -2,8 +2,9 @@
 
   <!--
     Les sorties de compilation ne doivent jamais atterrir dans le dossier du dépôt :
-    celui-ci est synchronisé par Google Drive, et une publication self-contained y
-    pousserait plusieurs dizaines de mégaoctets à chaque build.
+    une publication self-contained pèse une soixantaine de mégaoctets, ce qui encombre
+    l'arbre de travail — et devient franchement gênant lorsque le dossier est
+    synchronisé par un service de stockage en ligne.
 
     Racine par défaut : C:\proton, hors du dépôt et hors des dossiers masqués par
     l'Explorateur Windows. Surchargeable par la variable d'environnement

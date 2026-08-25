@@ -111,5 +111,5 @@ Deux précautions :
 
 - Sous Git Bash, `/config` est réécrit en chemin Windows par MSYS et n'atteint pas le
   programme. Utiliser PowerShell ou `cmd`, ou passer `--config`.
-- Ne pas compiler dans `G:\Mon disque` : le dossier est synchronisé par Google Drive
-  et chaque publication y pousserait des dizaines de mégaoctets.
+- Ne pas compiler dans un dossier synchronisé par un service de stockage en ligne :
+  chaque publication y pousserait des dizaines de mégaoctets.
