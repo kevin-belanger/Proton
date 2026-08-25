@@ -84,7 +84,7 @@ public static class SqliteEndpoints
                     return;
                 default:
                     await ApiError.WriteAsync(context, StatusCodes.Status404NotFound,
-                        ApiError.NotFound, $"Unknown action « {action} ».");
+                        ApiError.NotFound, $"Unknown action \"{action}\".");
                     return;
             }
         }
@@ -196,7 +196,7 @@ public static class SqliteEndpoints
 
     private static Task MissingSql(HttpContext context) =>
         ApiError.WriteAsync(context, StatusCodes.Status400BadRequest,
-            ApiError.InvalidRequest, "The « sql » property is required and cannot be empty.");
+            ApiError.InvalidRequest, "The \"sql\" property is required and cannot be empty.");
 
     private sealed record CommandBody(string? Sql, Dictionary<string, JsonElement>? Parameters);
 

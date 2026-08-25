@@ -26,7 +26,7 @@
   </PropertyGroup>
 
   <!-- Publication : self-contained, un seul fichier, bundle compressé.
-       Voir docs/01-personnalisation-executable.md — ces trois choix sont
+       Voir notes/01-personnalisation-executable.md — ces trois choix sont
        compatibles avec la personnalisation par le mode /config. -->
   <PropertyGroup>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

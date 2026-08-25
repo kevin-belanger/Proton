@@ -11,7 +11,7 @@ namespace Proton.Personalization;
 /// single-file.</b> <c>EndUpdateResource</c> reconstruit le fichier à partir de ses
 /// seuls en-têtes PE et supprime tout ce qui suit la dernière section : le bundle
 /// disparaîtrait en entier. C'est à <see cref="BundlePatcher"/> qu'il revient
-/// d'isoler le PE au préalable — voir <c>docs/01-personnalisation-executable.md</c>.
+/// d'isoler le PE au préalable — voir <c>notes/01-personnalisation-executable.md</c>.
 /// </summary>
 public static class ResourcePatcher
 {

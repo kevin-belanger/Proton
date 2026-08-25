@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Getting started — Proton</title>
+<meta name="description" content="Download Proton, run your first application, and package the sample into an executable of its own.">
+<link rel="icon" href="logo-96.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div>
+    <a class="brand" href="index.html"><img src="logo-96.png" alt="">Proton</a>
+    <nav class="site-nav">
+        <a href="index.html">Overview</a>
+        <a href="getting-started.html" class="current">Getting started</a>
+        <a href="api.html">API</a>
+        <a href="packaging.html">Packaging</a>
+        <a class="out" href="https://github.com/kevin-belanger/Proton">GitHub</a>
+    </nav>
+</div>
+</header>
+
+<main>
+
+<h1>Getting started</h1>
+
+<p class="lead">
+    From an empty folder to a working desktop application, then to an executable you
+    can hand to someone else.
+</p>
+
+<h2>Your first run</h2>
+
+<ol class="steps">
+    <li>
+        <h3>Download <code>Proton.exe</code></h3>
+        <p>
+            From the <a href="https://github.com/kevin-belanger/Proton/releases">releases
+            page</a>. Put it in an empty folder. Nothing to install.
+        </p>
+    </li>
+    <li>
+        <h3>Run it</h3>
+        <p>
+            A window opens on a starter page that checks the engine's services. Proton
+            has created two folders beside itself:
+        </p>
+<pre><code>MyApp/
+├── Proton.exe
+├── app/            your web application
+└── data/
+    ├── files/      served at /files
+    └── db/         your SQLite databases</code></pre>
+        <p class="muted">
+            <code>config</code> is not created — it only appears when you decide to
+            package the application.
+        </p>
+    </li>
+    <li>
+        <h3>Replace <code>app</code> with your own</h3>
+        <p>
+            <code>app/index.html</code> is served at <code>/</code>, and everything
+            below it keeps its path:
+        </p>
+<pre><code>app/index.html      →  /
+app/css/style.css   →  /css/style.css</code></pre>
+        <p>
+            Proton reads the folder from disk on every start, so editing a file and
+            reopening the window is the whole development loop. There is no build step
+            and nothing to compile.
+        </p>
+    </li>
+</ol>
+
+<div class="note">
+    <p>
+        <strong>Proton never overwrites your files.</strong> The starter page is only
+        written when <code>app</code> holds no <code>index.html</code> at all. Once
+        yours is there, it stays.
+    </p>
+</div>
+
+<h2>Developing against the APIs</h2>
+
+<p>
+    Everything goes through <code>fetch</code> on relative URLs. A minimal application
+    that writes a file and reads it back:
+</p>
+
+<pre><code>&lt;input id="text"&gt;
+&lt;button id="save"&gt;Save&lt;/button&gt;
+&lt;pre id="out"&gt;&lt;/pre&gt;
+
+&lt;script&gt;
+save.onclick = async () =&gt; {
+    await fetch('/files/note.txt', { method: 'PUT', body: text.value });
+    out.textContent = await (await fetch('/files/note.txt')).text();
+};
+&lt;/script&gt;</code></pre>
+
+<p>
+    That file lands in <code>data/files/note.txt</code>, next to the executable, and
+    survives restarts. See the <a href="api.html">API reference</a> for folders,
+    listings, databases and error handling.
+</p>
+
+<h3>Debugging</h3>
+
+<p>
+    The Proton window has no developer tools: <kbd>F12</kbd> and the context menu are
+    disabled, because an application window is not a browser. While developing, open
+    the same address in Edge or Chrome instead — the server is an ordinary local HTTP
+    server, and everything works there, DevTools included.
+</p>
+
+<p class="muted">
+    When something fails before the window appears, Proton writes what it can to
+    <code>%LOCALAPPDATA%\Proton\logs\proton.log</code>.
+</p>
+
+<h2>Walkthrough: package the sample app</h2>
+
+<p>
+    <strong>Proton Todo</strong> is a complete application — tasks in SQLite, file
+    attachments on disk, drag and drop. Turning it into a program of its own takes
+    about a minute.
+</p>
+
+<ol class="steps">
+    <li>
+        <h3>Get the sample</h3>
+        <p>Clone the repository, or download it as a ZIP and unpack it.</p>
+<pre class="shell"><code>git clone https://github.com/kevin-belanger/Proton.git</code></pre>
+    </li>
+    <li>
+        <h3>Set up a folder</h3>
+        <p>
+            Copy <code>samples/Todo/app</code> and <code>samples/Todo/config</code>
+            next to <code>Proton.exe</code>:
+        </p>
+<pre><code>Workshop/
+├── Proton.exe
+├── app/            index.html, css/, js/
+└── config/         config.json, icon.ico</code></pre>
+    </li>
+    <li>
+        <h3>Try it first</h3>
+        <p>
+            Double-click <code>Proton.exe</code>. Proton Todo opens. Add a task, drop
+            a file onto its card, tick it off — it is already working, before any
+            packaging.
+        </p>
+    </li>
+    <li>
+        <h3>Package it</h3>
+        <p>From a command prompt in that folder:</p>
+<pre class="shell"><code>Proton.exe /config
+
+<span class="dim">Source    : C:\Workshop\Proton.exe
+Config    : C:\Workshop\config\config.json
+Target    : C:\Workshop\ProtonTodo.exe
+Icon      : 23,947 bytes
+Shift     : -69,632 bytes, 512 padding, 353 offsets rewritten for 351 files
+Embedded  : app/ — 4 file(s), 19,829 bytes
+Archive   : 7,003 bytes
+Verified  : bundle consistent, configuration read back
+
+ProtonTodo.exe generated (62,918,079 bytes).</span></code></pre>
+        <p>
+            Nothing is written until that last line: Proton builds the file under a
+            temporary name, checks that its bundle is intact and that the embedded
+            configuration reads back, and only then puts it in place.
+        </p>
+    </li>
+    <li>
+        <h3>Ship it</h3>
+        <p>
+            Copy <strong><code>ProtonTodo.exe</code></strong> anywhere — another
+            folder, a USB stick, another machine. Nothing else goes with it. Run it:
+            your icon in the taskbar, your name in the title bar, the application
+            working from the first click.
+        </p>
+    </li>
+</ol>
+
+<p class="muted">
+    <code>samples/Todo</code> is worth reading end to end — it is deliberately small,
+    and its
+    <a href="https://github.com/kevin-belanger/Proton/tree/main/samples/Todo">README</a>
+    explains why each piece is built the way it is.
+</p>
+
+<h2>Next</h2>
+
+<div class="cards">
+    <a class="card" href="api.html">
+        <strong>API reference →</strong>
+        <span>Every route, every status code, every response shape.</span>
+    </a>
+    <a class="card" href="packaging.html">
+        <strong>Packaging →</strong>
+        <span>All the <code>config.json</code> options, and shipping initial data.</span>
+    </a>
+</div>
+
+</main>
+
+<footer class="site-footer">
+<div>
+    <a href="https://github.com/kevin-belanger/Proton">GitHub</a>
+    <a href="https://github.com/kevin-belanger/Proton/releases">Releases</a>
+    <a href="https://github.com/kevin-belanger/Proton/blob/main/LICENSE">MIT License</a>
+    <p style="margin-top:.75rem">© 2026 Kevin Belanger</p>
+</div>
+</footer>
+
+</body>
+</html>

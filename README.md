@@ -133,7 +133,7 @@ exposes its APIs and can produce personalised executables.
 functional analysis.
 
 What falls outside the scope is listed in §60, and the accepted simplifications in
-[docs/02-perimetre-v1.md](docs/02-perimetre-v1.md).
+[notes/02-perimetre-v1.md](notes/02-perimetre-v1.md).
 
 ---
 
@@ -161,13 +161,13 @@ dotnet test
 
 | Document | Contents | Language |
 | --- | --- | --- |
-| [Documentation](https://kevin-belanger.github.io/Proton/) | **The user documentation** — for anyone discovering Proton. Source: [docs/index.html](docs/index.html) | English |
+| [Documentation](https://kevin-belanger.github.io/Proton/) | **The user documentation** — for anyone discovering Proton. Source: [docs/](docs/) | English |
 | [Functional analysis](Proton%20-%20Analyse%20fonctionnelle.md) | The specification: what Proton must do, and its acceptance criteria | French |
-| [docs/](docs/) | Technical notes — the mechanisms established experimentally | French |
+| [notes/](notes/) | Technical notes — the mechanisms established experimentally | French |
 | [prototypes/](prototypes/) | The prototypes that settled those questions, with their measurements | French |
 | [samples/](samples/) | Example applications | English |
 
-The analysis describes the **what**. The notes in `docs/` describe the **how**, only
+The analysis describes the **what**. The notes in `notes/` describe the **how**, only
 where it required verification. The two refer to each other rather than repeating
 themselves.
 
@@ -177,7 +177,7 @@ Everything the project says about itself is in French: the analysis, the technic
 notes and the code comments. The boundary runs at the level of the string, not the
 file (§63.2).
 
-`docs/index.html` is published by GitHub Pages from the `docs` folder of `main`
+The site in `docs/` is published by GitHub Pages from that folder of `main`
 (§63.1). The engine's starter page links to it rather than reproducing it: presenting
 Proton to someone evaluating it and welcoming someone who has just launched it are two
 different jobs (§8.1).

@@ -4,243 +4,35 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Proton — desktop apps from HTML, CSS and JavaScript</title>
-<style>
-:root {
-    color-scheme: light dark;
-    --page: #ffffff;
-    --panel: #f7f8fa;
-    --text: #14161a;
-    --muted: #5a6270;
-    --faint: #8b93a1;
-    --line: #e4e7ec;
-    --accent: #4f46e5;
-    --accent-soft: #eef2ff;
-    --code-bg: #f6f7f9;
-    --code-text: #1f2430;
-    --shell-bg: #16181d;
-    --shell-text: #e6e9ef;
-    --shell-dim: #8b93a1;
-}
-@media (prefers-color-scheme: dark) {
-    :root {
-        --page: #14161a;
-        --panel: #1b1e24;
-        --text: #f0f2f5;
-        --muted: #a3abb8;
-        --faint: #6f7784;
-        --line: #2a2e36;
-        --accent: #8b93f8;
-        --accent-soft: #23263a;
-        --code-bg: #1b1e24;
-        --code-text: #e6e9ef;
-        --shell-bg: #0f1115;
-        --shell-text: #e6e9ef;
-        --shell-dim: #6f7784;
-    }
-}
-
-* { box-sizing: border-box; }
-
-body {
-    margin: 0;
-    padding: 0 1.5rem 6rem;
-    background: var(--page);
-    color: var(--text);
-    font-family: "Segoe UI Variable Text", "Segoe UI", -apple-system, system-ui, sans-serif;
-    font-size: 16px;
-    line-height: 1.65;
-    display: flex;
-    justify-content: center;
-}
-
-main { width: 100%; max-width: 44rem; }
-
-/* --- Typography --- */
-
-h1, h2, h3 {
-    font-family: "Segoe UI Variable Display", "Segoe UI", -apple-system, system-ui, sans-serif;
-    letter-spacing: -.02em;
-    line-height: 1.25;
-}
-
-h1 { margin: 0; font-size: 2.6rem; font-weight: 680; }
-
-h2 {
-    margin: 3.5rem 0 1rem;
-    font-size: 1.45rem;
-    font-weight: 640;
-    padding-top: 1.75rem;
-    border-top: 1px solid var(--line);
-}
-
-h3 { margin: 2rem 0 .5rem; font-size: 1.05rem; font-weight: 620; }
-
-p { margin: 0 0 1rem; }
-strong { font-weight: 620; }
-.muted { color: var(--muted); }
-
-a { color: var(--accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
-
-/* --- Header --- */
-
-header { padding: 5rem 0 1rem; }
-
-.mark {
-    width: 3rem;
-    height: 3rem;
-    margin-bottom: 1.5rem;
-    background: var(--accent);
-    border-radius: .8rem;
-    position: relative;
-}
-.mark::after {
-    content: "";
-    position: absolute;
-    left: 1.05rem; top: .8rem;
-    width: .7rem; height: 1.25rem;
-    border: solid #fff;
-    border-width: 0 3px 3px 0;
-    transform: rotate(45deg);
-}
-
-.lead {
-    margin-top: 1rem;
-    font-size: 1.2rem;
-    line-height: 1.55;
-    color: var(--muted);
-}
-
-/* --- Code --- */
-
-code {
-    font-family: "Cascadia Code", Consolas, "SF Mono", monospace;
-    font-size: .88em;
-    background: var(--code-bg);
-    border: 1px solid var(--line);
-    border-radius: 5px;
-    padding: .1em .35em;
-}
-
-pre {
-    margin: 0 0 1.25rem;
-    padding: 1rem 1.1rem;
-    background: var(--code-bg);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    overflow-x: auto;
-}
-
-pre code {
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: .855rem;
-    line-height: 1.65;
-    color: var(--code-text);
-}
-
-pre.shell {
-    background: var(--shell-bg);
-    border-color: transparent;
-}
-pre.shell code { color: var(--shell-text); }
-pre.shell .dim { color: var(--shell-dim); }
-
-/* --- Two-column comparison --- */
-
-.compare {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    margin: 1.5rem 0;
-    background: var(--line);
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    overflow: hidden;
-}
-.compare > div { padding: 1.1rem 1.25rem; background: var(--page); }
-.compare h4 { margin: 0 0 .6rem; font-size: .78rem; font-weight: 640; text-transform: uppercase; letter-spacing: .06em; color: var(--faint); }
-.compare ul { margin: 0; padding-left: 1.1rem; color: var(--muted); font-size: .93rem; }
-.compare li { margin-bottom: .3rem; }
-.compare .yes { color: var(--text); }
-
-@media (max-width: 34rem) { .compare { grid-template-columns: 1fr; } }
-
-/* --- Steps --- */
-
-.steps { counter-reset: step; margin: 1.5rem 0 0; padding: 0; list-style: none; }
-
-.steps > li {
-    counter-increment: step;
-    position: relative;
-    padding: 0 0 1.75rem 3rem;
-    border-left: 1px solid var(--line);
-    margin-left: .9rem;
-}
-.steps > li:last-child { border-left-color: transparent; padding-bottom: 0; }
-
-.steps > li::before {
-    content: counter(step);
-    position: absolute;
-    left: -.9rem; top: -.15rem;
-    width: 1.8rem; height: 1.8rem;
-    background: var(--accent-soft);
-    color: var(--accent);
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    font-size: .82rem;
-    font-weight: 640;
-}
-
-.steps h3 { margin: 0 0 .35rem; }
-.steps p { margin-bottom: .75rem; }
-
-/* --- Table --- */
-
-table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: .93rem; }
-th, td { text-align: left; padding: .6rem .8rem; border-bottom: 1px solid var(--line); vertical-align: top; }
-th { font-weight: 620; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--faint); }
-td code { white-space: nowrap; }
-
-/* --- Note --- */
-
-.note {
-    margin: 1.5rem 0;
-    padding: 1rem 1.25rem;
-    background: var(--panel);
-    border-left: 3px solid var(--accent);
-    border-radius: 0 8px 8px 0;
-    font-size: .95rem;
-    color: var(--muted);
-}
-.note p:last-child { margin-bottom: 0; }
-.note strong { color: var(--text); }
-
-/* --- Footer --- */
-
-footer {
-    margin-top: 4rem;
-    padding-top: 1.75rem;
-    border-top: 1px solid var(--line);
-    color: var(--faint);
-    font-size: .9rem;
-}
-footer a { margin-right: 1.25rem; }
-</style>
+<meta name="description" content="A Windows engine that runs an HTML/CSS/JavaScript application as a desktop app, and ships it as a single executable.">
+<link rel="icon" href="logo-96.png">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
+
+<header class="site-header">
+<div>
+    <a class="brand" href="index.html"><img src="logo-96.png" alt="">Proton</a>
+    <nav class="site-nav">
+        <a href="index.html" class="current">Overview</a>
+        <a href="getting-started.html">Getting started</a>
+        <a href="api.html">API</a>
+        <a href="packaging.html">Packaging</a>
+        <a class="out" href="https://github.com/kevin-belanger/Proton">GitHub</a>
+    </nav>
+</div>
+</header>
+
 <main>
 
-<header>
-    <div class="mark"></div>
-    <h1>Proton</h1>
-    <p class="lead">
-        Build a Windows desktop application with HTML, CSS and JavaScript —
-        and ship it as one <code>.exe</code>.
-    </p>
-</header>
+<img src="logo-256.png" alt="" width="72" height="72" style="border-radius:16px;margin-bottom:1.5rem">
+
+<h1>Proton</h1>
+
+<p class="lead">
+    Build a Windows desktop application with HTML, CSS and JavaScript —
+    and ship it as one <code>.exe</code>.
+</p>
 
 <p>
     You write an ordinary web application. Proton runs it in a real window, gives it
@@ -251,6 +43,25 @@ footer a { margin-right: 1.25rem; }
 <p class="muted">
     No installer. No Node.js. No .NET runtime to deploy. One file.
 </p>
+
+<div class="cards">
+    <a class="card" href="getting-started.html">
+        <strong>Getting started</strong>
+        <span>Download, run, and turn the sample app into a program of its own.</span>
+    </a>
+    <a class="card" href="api.html">
+        <strong>API reference</strong>
+        <span>Files, SQLite and identity — every route, every response.</span>
+    </a>
+    <a class="card" href="packaging.html">
+        <strong>Packaging</strong>
+        <span><code>config.json</code>, <code>/config</code>, and shipping one file.</span>
+    </a>
+    <a class="card" href="https://github.com/kevin-belanger/Proton/releases">
+        <strong>Download →</strong>
+        <span>The latest <code>Proton.exe</code> from the releases page.</span>
+    </a>
+</div>
 
 <h2>What it adds to a web page</h2>
 
@@ -281,217 +92,44 @@ footer a { margin-right: 1.25rem; }
     the WebView2 engine that Windows already ships.
 </p>
 
-<h2>Getting started</h2>
-
-<ol class="steps">
-    <li>
-        <h3>Download <code>Proton.exe</code></h3>
-        <p>From the <a href="https://github.com/kevin-belanger/Proton/releases">releases page</a>. Put it in an empty folder.</p>
-    </li>
-    <li>
-        <h3>Run it</h3>
-        <p>
-            A window opens on a starter page that checks the engine's services and
-            links back here. Proton has created an <code>app</code> folder next to
-            itself, holding that page, and a <code>data</code> folder for everything
-            your application will store.
-        </p>
-<pre><code>MyApp/
-├── Proton.exe
-├── app/            your web application
-└── data/
-    ├── files/      your files
-    └── db/         your SQLite databases</code></pre>
-    </li>
-    <li>
-        <h3>Replace <code>app</code> with your own</h3>
-        <p>
-            <code>app/index.html</code> is served at <code>/</code>. Proton reads the
-            folder from disk on every start, so editing a file and reopening the
-            window is the whole development loop — there is no build step and nothing
-            to compile.
-        </p>
-    </li>
-</ol>
-
-<h2>The APIs</h2>
+<h2>What it looks like in code</h2>
 
 <p>
-    Three of them, all reached with plain <code>fetch</code> and relative URLs. There
-    is no library to install and nothing to import.
+    Three APIs, all reached with plain <code>fetch</code> and relative URLs. No library
+    to install, nothing to import.
 </p>
 
-<h3>Files</h3>
+<pre><code>// Files
+await fetch('/files/notes.txt', { method: 'PUT', body: 'hello' });
 
-<pre><code>await fetch('/files/notes.txt', { method: 'PUT', body: 'hello' });
-
-const text = await (await fetch('/files/notes.txt')).text();
-
-const { entries } = await (await fetch('/files/reports/')).json();
-// [{ name: 'march.pdf', type: 'file', size: 48210, lastModified: '...' }]
-
-await fetch('/files/reports/', { method: 'PUT' });                  // create folder
-await fetch('/files/reports/?recursive=1', { method: 'DELETE' });   // and its contents</code></pre>
-
-<p class="muted">
-    The trailing slash is what tells a folder from a file. Uploading is a
-    <code>PUT</code> whose body is the content itself — a string, a <code>Blob</code>,
-    or a <code>File</code> straight out of an <code>&lt;input type="file"&gt;</code>.
-    Everything under <code>/files</code> lives in <code>data/files</code>, and nothing
-    outside it can be reached.
-</p>
-
-<h3>SQLite</h3>
-
-<pre><code>await fetch('/api/sqlite/app.db/execute', {
+// SQLite
+await fetch('/api/sqlite/app.db/execute', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
         sql: 'INSERT INTO notes (text) VALUES ($text)',
         parameters: { $text: 'hello' }
     })
-});</code></pre>
+});
 
-<p>
-    Reading uses <code>/query</code> and answers with columns and rows kept apart, so
-    that two columns of the same name stay distinct:
-</p>
-
-<pre><code>{ "columns": ["id", "name"], "rows": [[1, "Alice"], [2, "Bob"]] }</code></pre>
+// The application's own name and version, read from the executable
+const app = await (await fetch('/api/app')).json();</code></pre>
 
 <p class="muted">
-    <code>app.db</code> is created by the first write, in <code>data/db</code> — so
-    open with your <code>CREATE TABLE IF NOT EXISTS</code>, since querying a database
-    that does not exist yet answers <code>404</code> rather than inventing an empty
-    one. <code>/transaction</code> takes a list of statements and applies all of them
-    or none, and named parameters mean you never concatenate values into SQL.
+    Your application never has to know where it sits on disk, nor which port was
+    chosen. Relative URLs are enough. <a href="api.html">Full reference →</a>
 </p>
 
-<h3>Identity</h3>
-
-<pre><code>const app = await (await fetch('/api/app')).json();
-// { name: "My App", version: "1.0.0", company: "...", engine: { ... } }</code></pre>
-
-<p class="muted">
-    Your application reads its own name and version from the executable, instead of
-    repeating them in your code where they drift out of date.
-</p>
-
-<h2>Shipping one file</h2>
-
-<p>
-    Write a <code>config/config.json</code> — two properties are enough — and drop an
-    icon beside it:
-</p>
-
-<pre><code>{
-  "name": "My App",
-  "executableName": "MyApp"
-}</code></pre>
+<h2>And one file to ship</h2>
 
 <pre class="shell"><code>Proton.exe /config</code></pre>
 
 <p>
-    You get <strong><code>MyApp.exe</code></strong>: the same engine, carrying your
-    name, your icon, your Windows file properties <strong>and your application
-    inside it</strong>. <code>Proton.exe</code> is left untouched.
+    With a two-line <code>config.json</code>, you get an executable carrying your name,
+    your icon, your Windows file properties <strong>and your application inside
+    it</strong>. Distribute that file, and nothing else.
+    <a href="packaging.html">How packaging works →</a>
 </p>
-
-<div class="note">
-    <p>
-        <strong>Your application is never unpacked onto the disk.</strong> It is
-        served from within the executable, so a new version of your program always
-        ships the interface that belongs to it. The two cannot drift apart.
-    </p>
-</div>
-
-<p>
-    Distribute that single file. On first run it creates its <code>data</code> folder
-    beside itself and starts. To ship starter content — templates, a catalogue, a
-    pre-filled database — put it in <code>data</code> and add the <code>data</code>
-    argument:
-</p>
-
-<pre class="shell"><code>Proton.exe /config data</code></pre>
-
-<p class="muted">
-    That content is laid down on first run, and only if <code>data</code> does not
-    already exist. What your users have made is never touched.
-</p>
-
-<h3>Optional settings</h3>
-
-<table>
-    <tr><th>Property</th><th>Default</th></tr>
-    <tr><td><code>windowTitle</code></td><td>falls back to <code>name</code></td></tr>
-    <tr><td><code>version</code></td><td>shown in the file's Windows properties</td></tr>
-    <tr><td><code>company</code></td><td>same</td></tr>
-    <tr><td><code>window</code></td><td><code>{ "width": 1280, "height": 800, "resizable": true }</code></td></tr>
-</table>
-
-<h2>Walkthrough: package the sample app</h2>
-
-<p>
-    <strong>Proton Todo</strong> is a complete application — tasks in SQLite, file
-    attachments on disk, drag and drop. Turning it into a program of its own takes
-    about a minute.
-</p>
-
-<ol class="steps">
-    <li>
-        <h3>Get the sample</h3>
-        <p>Clone the repository, or download it as a ZIP and unpack it.</p>
-<pre class="shell"><code>git clone https://github.com/kevin-belanger/Proton.git</code></pre>
-    </li>
-    <li>
-        <h3>Set up a folder</h3>
-        <p>
-            Copy <code>samples/Todo/app</code> and <code>samples/Todo/config</code>
-            next to <code>Proton.exe</code>:
-        </p>
-<pre><code>Workshop/
-├── Proton.exe
-├── app/            index.html, css/, js/
-└── config/         config.json, icon.ico</code></pre>
-    </li>
-    <li>
-        <h3>Try it first</h3>
-        <p>
-            Double-click <code>Proton.exe</code>. Proton Todo opens. Add a task, drop
-            a file onto its card, tick it off — it is already working.
-        </p>
-    </li>
-    <li>
-        <h3>Package it</h3>
-        <p>From a command prompt in that folder:</p>
-<pre class="shell"><code>Proton.exe /config
-
-<span class="dim">Source    : C:\Workshop\Proton.exe
-Config    : C:\Workshop\config\config.json
-Target    : C:\Workshop\ProtonTodo.exe
-Icon      : 23,947 bytes
-Shift     : -69,632 bytes, 512 padding, 353 offsets rewritten for 351 files
-Embedded  : app/ — 4 file(s), 19,829 bytes
-Archive   : 7,003 bytes
-Verified  : bundle consistent, configuration read back
-
-ProtonTodo.exe generated (62,918,079 bytes).</span></code></pre>
-        <p>
-            Nothing is written until that last line: Proton builds the file under a
-            temporary name, checks that its bundle is intact and that the embedded
-            configuration reads back, and only then puts it in place.
-        </p>
-    </li>
-    <li>
-        <h3>Ship it</h3>
-        <p>
-            Copy <strong><code>ProtonTodo.exe</code></strong> anywhere — another
-            folder, a USB stick, another machine. Nothing else goes with it. Run it:
-            your icon in the taskbar, your name in the title bar, the application
-            working from the first click.
-        </p>
-    </li>
-</ol>
 
 <h2>What Proton does not do</h2>
 
@@ -520,38 +158,19 @@ ProtonTodo.exe generated (62,918,079 bytes).</span></code></pre>
     </p>
 </div>
 
-<h2>Where to go next</h2>
+</main>
 
-<table>
-    <tr>
-        <td><a href="https://github.com/kevin-belanger/Proton">The repository</a></td>
-        <td>Source, samples and design notes</td>
-    </tr>
-    <tr>
-        <td><a href="https://github.com/kevin-belanger/Proton/releases">Releases</a></td>
-        <td>Download <code>Proton.exe</code></td>
-    </tr>
-    <tr>
-        <td><a href="https://github.com/kevin-belanger/Proton/tree/main/samples/Todo">Proton Todo</a></td>
-        <td>A complete application, worth reading end to end</td>
-    </tr>
-</table>
-
-<p class="muted">
-    Something not working? Proton writes what it can to
-    <code>%LOCALAPPDATA%\Proton\logs\proton.log</code> — start there.
-</p>
-
-<footer>
+<footer class="site-footer">
+<div>
     <a href="https://github.com/kevin-belanger/Proton">GitHub</a>
+    <a href="https://github.com/kevin-belanger/Proton/releases">Releases</a>
     <a href="https://github.com/kevin-belanger/Proton/blob/main/LICENSE">MIT License</a>
-    <span>© 2026 Kevin Belanger</span>
     <p style="margin-top:.75rem">
-        Applications you build with Proton are yours. Ship them however you like,
-        commercially or not, with no obligation to publish your source.
+        © 2026 Kevin Belanger. Applications you build with Proton are yours — ship them
+        however you like, commercially or not, with no obligation to publish your source.
     </p>
+</div>
 </footer>
 
-</main>
 </body>
 </html>

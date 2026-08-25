@@ -10,7 +10,7 @@ namespace Proton.Personalization;
 ///
 /// Le trailer est annexé <b>après</b> le bundle .NET plutôt que stocké en ressource
 /// PE : le bundle ignore ces octets, et aucun de ses décalages n'est affecté. Voir
-/// <c>docs/01-personnalisation-executable.md</c>.
+/// <c>notes/01-personnalisation-executable.md</c>.
 ///
 /// <code>
 /// [ ... exécutable ... ][ archive ZIP ][ taille int64 ][ magie 8 octets ]

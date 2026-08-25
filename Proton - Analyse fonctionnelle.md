@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 1.9
+**Version du document :** 1.10
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -9,10 +9,11 @@
 
 Ce document décrit **ce que Proton doit faire**. Les mécanismes retenus pour y parvenir,
 lorsqu'ils ont demandé une vérification expérimentale, sont consignés séparément dans
-`docs/`. Les prototypes qui les ont établis se trouvent dans `prototypes/`.
+`notes/`. Les prototypes qui les ont établis se trouvent dans `prototypes/`.
 
 **Révisions :**
 
+* 1.10 — la documentation devient un site de quatre pages; les notes techniques quittent `docs/` pour `notes/` (§63.1).
 * 1.9 — règle de langue : tout ce que Proton dit à son utilisateur passe en anglais (§63.2).
 * 1.8 — la documentation d'utilisation est publiée par GitHub Pages (§63.1); la page d'accueil y renvoie au lieu de la reprendre (§8.1).
 * 1.7 — la page d'accueil devenait la documentation elle-même. Essayé, puis abandonné en 1.8.
@@ -633,7 +634,7 @@ L'atomicité de l'écriture elle-même demeure exigée : voir §59.
 
 > **Décision datée du 2026-08-24.** Ce report est un choix assumé, non un oubli.
 > Les conditions de sa révision et la façon de réintroduire le mécanisme sans
-> réécriture figurent dans `docs/02-perimetre-v1.md`.
+> réécriture figurent dans `notes/02-perimetre-v1.md`.
 
 ---
 
@@ -1500,7 +1501,7 @@ La configuration doit donc être intégrée dans l'exécutable généré d'une m
 
 La méthode a été arrêtée : la configuration est annexée **en fin de fichier**, après le
 bundle .NET, et non stockée comme ressource PE. Le format et les raisons de ce choix
-figurent dans `docs/01-personnalisation-executable.md`.
+figurent dans `notes/01-personnalisation-executable.md`.
 
 ## 39.1 L'application voyage avec le moteur
 
@@ -1976,7 +1977,7 @@ Restreindre l'accès dans une version ultérieure doit être affaire de politiqu
 refonte.
 
 > **Décision datée du 2026-08-24.** Les mesures envisagées et les conditions de
-> révision figurent dans `docs/02-perimetre-v1.md`. Ce choix doit être réexaminé
+> révision figurent dans `notes/02-perimetre-v1.md`. Ce choix doit être réexaminé
 > avant toute distribution large d'applications Proton.
 
 ---
@@ -2222,7 +2223,7 @@ Les fonctionnalités suivantes sont volontairement reportées :
 
 Les deux derniers points sont des simplifications décidées le 2026-08-24 en cours de
 conception, et non des fonctionnalités jamais envisagées. Leurs conditions de révision
-figurent dans `docs/02-perimetre-v1.md`.
+figurent dans `notes/02-perimetre-v1.md`.
 
 ---
 
@@ -2373,24 +2374,42 @@ La compilation initiale sera réalisée sur Windows.
 
 ## 63.1 Documentation d'utilisation
 
-Le fichier `docs/index.html` présente le moteur à qui n'en a jamais entendu parler,
-décrit les trois API, et conduit pas à pas jusqu'à la génération d'un exécutable à
-partir de l'exemple. Il ne se confond pas avec le présent document, qui s'adresse à
-qui construit Proton et non à qui l'utilise.
+*Une version antérieure décrivait un fichier HTML unique. Le site l'a remplacé une
+fois GitHub Pages en service.*
 
-Il est publié par **GitHub Pages**, servi depuis le dossier `docs` de la branche
-principale, à l'adresse `https://kevin-belanger.github.io/Proton/`.
+`docs/` est le **site de documentation**, publié par GitHub Pages depuis ce dossier de
+la branche principale, à l'adresse `https://kevin-belanger.github.io/Proton/`. Il
+s'adresse à qui utilise Proton, et ne se confond pas avec le présent document, qui
+s'adresse à qui le construit.
 
-Deux conséquences pratiques :
+| Page | Contenu |
+| --- | --- |
+| `index.html` | ce qu'est Proton, ce qu'il ajoute à une page Web, ce qu'il ne fait pas |
+| `getting-started.html` | première exécution, boucle de développement, emballage de l'exemple pas à pas |
+| `api.html` | référence complète des trois API — routes, formes de réponse, codes d'erreur, limites |
+| `packaging.html` | `config.json` au complet, `/config`, distribution, causes d'échec |
+
+`style.css` leur est commun, et `logo-96.png` / `logo-256.png` sont des réductions du
+logo `proton.png`, dont la taille d'origine ne convient pas à un en-tête de page.
+
+Le dossier ne contient **que** le site. Les notes techniques françaises vivent dans
+`notes/` : les publier sous la même adresse mélangerait deux publics et deux langues,
+alors que Pages sert tout ce qu'il trouve.
+
+Trois conséquences pratiques :
 
 * le dossier contient un fichier `.nojekyll` vide. Sans lui, Pages fait passer `docs`
-  par Jekyll avant de le servir; la page n'en a aucun besoin, et le fichier publié doit
-  être identique à celui du dépôt, à l'octet près;
-* `raw.githubusercontent.com` ne convient pas pour la servir : ce domaine répond
+  par Jekyll avant de le servir; le site n'en a aucun besoin, et ce qui est publié doit
+  être identique à ce que porte le dépôt;
+* `raw.githubusercontent.com` ne convient pas pour servir ces pages : ce domaine répond
   `text/plain` avec `nosniff`, ce qui affiche le code source au lieu de la page. Seul
-  Pages produit un vrai `text/html`.
+  Pages produit un vrai `text/html`;
+* les liens entre pages sont **relatifs**, sans barre oblique initiale. Un chemin
+  absolu désignerait la racine du domaine `github.io`, et non celle du projet, qui est
+  servi sous `/Proton/`.
 
-La page d'accueil du moteur y renvoie par un lien, sans en reprendre le contenu (§8.1).
+La page d'accueil du moteur renvoie vers le site par un lien, sans en reprendre le
+contenu (§8.1).
 
 ## 63.2 Règle de langue
 
@@ -2399,9 +2418,9 @@ dit de lui-même est en **français**.
 
 | | Pour qui | Langue |
 | --- | --- | --- |
-| Ce document, `docs/*.md`, `prototypes/` | qui construit Proton | français |
+| Ce document, `notes/`, `prototypes/` | qui construit Proton | français |
 | Commentaires du code | qui le modifie | français |
-| `README.md`, `docs/index.html`, `samples/` | qui **utilise** Proton | anglais |
+| `README.md`, le site `docs/`, `samples/` | qui **utilise** Proton | anglais |
 | Sortie de `/config`, boîtes de dialogue, messages d'erreur des API | l'utilisateur | anglais |
 | Journal de diagnostic | l'utilisateur, que la documentation y envoie | anglais |
 
@@ -2825,7 +2844,7 @@ Implémenter :
 * métadonnées Windows;
 * génération atomique.
 
-Le procédé est déjà établi et éprouvé : voir `docs/01-personnalisation-executable.md`
+Le procédé est déjà établi et éprouvé : voir `notes/01-personnalisation-executable.md`
 et le code de référence dans `prototypes/config-pe/`. Restent à traiter les métadonnées
 Windows (§42) et les icônes multi-résolutions.
 
@@ -2851,7 +2870,7 @@ Certains détails pourront être déterminés en cours d'implémentation.
 ## 67.1 Questions tranchées
 
 Les points suivants ont été résolus par le prototype `config-pe`. Le détail figure dans
-`docs/01-personnalisation-executable.md`.
+`notes/01-personnalisation-executable.md`.
 
 * **Mécanisme de modification des ressources PE** — les API Win32 de mise à jour de
   ressources ne peuvent être appliquées qu'au PE isolé du bundle, jamais à l'exécutable

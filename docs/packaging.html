@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Packaging — Proton</title>
+<meta name="description" content="Turn your application into a single executable carrying your name, your icon and your interface.">
+<link rel="icon" href="logo-96.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div>
+    <a class="brand" href="index.html"><img src="logo-96.png" alt="">Proton</a>
+    <nav class="site-nav">
+        <a href="index.html">Overview</a>
+        <a href="getting-started.html">Getting started</a>
+        <a href="api.html">API</a>
+        <a href="packaging.html" class="current">Packaging</a>
+        <a class="out" href="https://github.com/kevin-belanger/Proton">GitHub</a>
+    </nav>
+</div>
+</header>
+
+<main>
+
+<h1>Packaging</h1>
+
+<p class="lead">
+    One command turns your <code>app</code> folder into an executable carrying your
+    name, your icon and your interface — with nothing beside it.
+</p>
+
+<h2>The configuration</h2>
+
+<p>
+    Create a <code>config</code> folder next to <code>Proton.exe</code>, holding a
+    <code>config.json</code> and — optionally — an <code>icon.ico</code>:
+</p>
+
+<pre><code>MyApp/
+├── Proton.exe
+├── app/
+└── config/
+    ├── config.json
+    └── icon.ico</code></pre>
+
+<p>Two properties are required. Everything else has a sensible default:</p>
+
+<pre><code>{
+  "name": "Inventory Manager",
+  "executableName": "InventoryManager"
+}</code></pre>
+
+<div class="scroll">
+<table>
+    <tr><th>Property</th><th>Meaning</th><th>Default</th></tr>
+    <tr>
+        <td><code>name</code></td>
+        <td>The application's name, returned by <code>/api/app</code> and written into the file's Windows properties</td>
+        <td><em>required</em></td>
+    </tr>
+    <tr>
+        <td><code>executableName</code></td>
+        <td>The file to produce. <code>.exe</code> is added if you leave it off</td>
+        <td><em>required</em></td>
+    </tr>
+    <tr>
+        <td><code>windowTitle</code></td>
+        <td>The window's title bar</td>
+        <td>falls back to <code>name</code></td>
+    </tr>
+    <tr>
+        <td><code>version</code></td>
+        <td>Shown in the file's properties, and on <code>/api/app</code></td>
+        <td>none</td>
+    </tr>
+    <tr>
+        <td><code>company</code></td>
+        <td>Same</td>
+        <td>none</td>
+    </tr>
+    <tr>
+        <td><code>window.width</code></td>
+        <td>Window width in pixels</td>
+        <td><code>1280</code></td>
+    </tr>
+    <tr>
+        <td><code>window.height</code></td>
+        <td>Window height in pixels</td>
+        <td><code>800</code></td>
+    </tr>
+    <tr>
+        <td><code>window.resizable</code></td>
+        <td>Whether the user may resize it</td>
+        <td><code>true</code></td>
+    </tr>
+</table>
+</div>
+
+<p>A complete one:</p>
+
+<pre><code>{
+  "name": "Inventory Manager",
+  "executableName": "InventoryManager",
+  "windowTitle": "Inventory Manager — 2026 Edition",
+  "version": "2.4.1",
+  "company": "Kevin's Workshop",
+  "window": { "width": 1280, "height": 800, "resizable": true }
+}</code></pre>
+
+<p class="muted">
+    <code>icon.ico</code> becomes the file's icon, the taskbar icon and the window
+    icon. Provide several resolutions in the one <code>.ico</code> and Windows picks
+    what it needs. Without it, the generated executable keeps Proton's icon.
+</p>
+
+<h2>Generating</h2>
+
+<pre class="shell"><code>Proton.exe /config</code></pre>
+
+<p>
+    You get <strong><code>InventoryManager.exe</code></strong>: the same engine,
+    carrying your metadata <strong>and your application inside it</strong>.
+    <code>Proton.exe</code> is left untouched — an executable never modifies itself,
+    so you can generate as many applications from it as you like.
+</p>
+
+<p class="muted">
+    Run it from a command prompt and the report goes to the console. Launch it by
+    double-clicking and the same report appears in a dialog, since there is no console
+    to write to. The exit code is <code>0</code> on success and <code>2</code> on
+    failure.
+</p>
+
+<div class="note">
+    <p>
+        <strong>Your application is never unpacked onto the disk.</strong> It is served
+        from within the executable, so a new version of your program always ships the
+        interface that belongs to it. The two cannot drift apart, and there is no
+        <code>app</code> folder for a user to edit by accident.
+    </p>
+</div>
+
+<h3>What the executable produces on first run</h3>
+
+<pre><code>Anywhere/
+├── InventoryManager.exe
+└── data/
+    ├── files/
+    └── db/</code></pre>
+
+<p>
+    That is all. No <code>app</code>, no <code>config</code> — those belong to
+    development, not to distribution.
+</p>
+
+<h2>Shipping initial content</h2>
+
+<p>
+    To deliver templates, a catalogue or a pre-filled database, put them in
+    <code>data</code> and add the <code>data</code> argument:
+</p>
+
+<pre class="shell"><code>Proton.exe /config data</code></pre>
+
+<p>
+    Both <code>data/files</code> and <code>data/db</code> are embedded, and laid down
+    on first run — <strong>but only if <code>data</code> does not already exist</strong>.
+</p>
+
+<p class="muted">
+    It is all or nothing, deliberately. Once a user has started using the application,
+    that folder is theirs; mixing delivered content into it would produce a state
+    nobody could reason about afterwards.
+</p>
+
+<h2>Distributing</h2>
+
+<p>
+    Copy the single file. Another folder, a USB stick, a network share, another
+    machine — nothing travels with it.
+</p>
+
+<div class="scroll">
+<table>
+    <tr><th></th><th></th></tr>
+    <tr><td>Size</td><td>Around 63 MB — the .NET runtime is inside, compressed</td></tr>
+    <tr><td>Requires</td><td>64-bit Windows 10 or 11, with Microsoft Edge WebView2</td></tr>
+    <tr><td>Installs</td><td>Nothing. It writes only its own <code>data</code> folder</td></tr>
+    <tr><td>Uninstalls</td><td>Delete the file and its folder</td></tr>
+</table>
+</div>
+
+<p class="muted">
+    WebView2 ships with Windows 11 and with recent Windows 10 installs. If it is
+    missing, Proton says so in a dialog rather than failing silently.
+</p>
+
+<h3>Licence and attribution</h3>
+
+<p>
+    Proton is <a href="https://github.com/kevin-belanger/Proton/blob/main/LICENSE">MIT</a>.
+    Applications you build with it are yours: ship them however you like, commercially
+    or not, with no obligation to publish your source.
+</p>
+
+<p class="muted">
+    The engine is embedded in every executable produced, so the attribution MIT asks
+    for is written there automatically — in the file's Windows properties and on
+    <code>/api/app</code>. There is nothing for you to do.
+</p>
+
+<h2>When it fails</h2>
+
+<div class="scroll">
+<table>
+    <tr><th>Message</th><th>Cause</th></tr>
+    <tr>
+        <td><code>"…\app" was not found.</code></td>
+        <td>No <code>app</code> folder beside the executable — there is nothing to embed</td>
+    </tr>
+    <tr>
+        <td><code>"…\config\config.json" was not found.</code></td>
+        <td>No configuration to read</td>
+    </tr>
+    <tr>
+        <td><code>"name" and "executableName" are required.</code></td>
+        <td>One of the two required properties is missing or empty</td>
+    </tr>
+    <tr>
+        <td><code>config.json could not be read: …</code></td>
+        <td>The JSON is malformed — the parser says where</td>
+    </tr>
+    <tr>
+        <td><code>The target is the source executable…</code></td>
+        <td><code>executableName</code> names <code>Proton.exe</code> itself</td>
+    </tr>
+    <tr>
+        <td><code>"…" could not be replaced. Is the application still running?</code></td>
+        <td>A previous build of the target is still open</td>
+    </tr>
+</table>
+</div>
+
+<p>
+    Nothing is written until the final line. Proton builds the file under a temporary
+    name, verifies that its bundle is intact and that the embedded configuration reads
+    back, and only then moves it into place. A failed generation leaves no
+    half-written executable behind.
+</p>
+
+</main>
+
+<footer class="site-footer">
+<div>
+    <a href="https://github.com/kevin-belanger/Proton">GitHub</a>
+    <a href="https://github.com/kevin-belanger/Proton/releases">Releases</a>
+    <a href="https://github.com/kevin-belanger/Proton/blob/main/LICENSE">MIT License</a>
+    <p style="margin-top:.75rem">© 2026 Kevin Belanger</p>
+</div>
+</footer>
+
+</body>
+</html>

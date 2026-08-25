@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API reference — Proton</title>
+<meta name="description" content="The three APIs Proton adds to a web page: files, SQLite databases, and application identity.">
+<link rel="icon" href="logo-96.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="site-header">
+<div>
+    <a class="brand" href="index.html"><img src="logo-96.png" alt="">Proton</a>
+    <nav class="site-nav">
+        <a href="index.html">Overview</a>
+        <a href="getting-started.html">Getting started</a>
+        <a href="api.html" class="current">API</a>
+        <a href="packaging.html">Packaging</a>
+        <a class="out" href="https://github.com/kevin-belanger/Proton">GitHub</a>
+    </nav>
+</div>
+</header>
+
+<main>
+
+<h1>API reference</h1>
+
+<p class="lead">
+    Three APIs, all reached with plain <code>fetch</code> on relative URLs. There is no
+    library to install and nothing to import.
+</p>
+
+<div class="scroll">
+<table>
+    <tr><th>Space</th><th>What it holds</th><th>On disk</th></tr>
+    <tr>
+        <td><code>/files</code></td>
+        <td>Your application's files and folders</td>
+        <td><code>data/files</code></td>
+    </tr>
+    <tr>
+        <td><code>/api/sqlite</code></td>
+        <td>SQLite databases</td>
+        <td><code>data/db</code></td>
+    </tr>
+    <tr>
+        <td><code>/api/app</code></td>
+        <td>The application's own identity</td>
+        <td>inside the executable</td>
+    </tr>
+    <tr>
+        <td>everything else</td>
+        <td>Your application itself</td>
+        <td><code>app/</code>, or embedded</td>
+    </tr>
+</table>
+</div>
+
+<p class="muted">
+    <code>/files</code> and <code>/api</code> are reserved: a file at
+    <code>app/api/x.html</code> can never capture those routes. Anything under them
+    that Proton does not implement answers <code>501</code> rather than falling through
+    to your application.
+</p>
+
+<h2>Files</h2>
+
+<p>
+    Everything under <code>/files</code> lives in <code>data/files</code>, and nothing
+    outside it can be reached. <strong>The trailing slash is what distinguishes a
+    folder from a file</strong> — that one convention explains most of the API.
+</p>
+
+<div class="scroll">
+<table>
+    <tr><th>Route</th><th>Does</th></tr>
+    <tr><td><span class="m m-get">GET</span> <code>/files/{path}</code></td><td>Read a file</td></tr>
+    <tr><td><span class="m m-get">GET</span> <code>/files/{path}/</code></td><td>List a folder</td></tr>
+    <tr><td><span class="m m-put">PUT</span> <code>/files/{path}</code></td><td>Write a file, creating parent folders</td></tr>
+    <tr><td><span class="m m-put">PUT</span> <code>/files/{path}/</code></td><td>Create a folder (idempotent)</td></tr>
+    <tr><td><span class="m m-del">DELETE</span> <code>/files/{path}</code></td><td>Delete a file</td></tr>
+    <tr><td><span class="m m-del">DELETE</span> <code>/files/{path}/</code></td><td>Delete an empty folder</td></tr>
+    <tr><td><span class="m m-del">DELETE</span> <code>/files/{path}/?recursive=1</code></td><td>Delete a folder and its contents</td></tr>
+</table>
+</div>
+
+<p class="muted">
+    <code>HEAD</code> is accepted wherever <code>GET</code> is. Any other method
+    answers <code>405</code> with an <code>Allow</code> header.
+</p>
+
+<h3>Reading a file</h3>
+
+<pre><code>const text = await (await fetch('/files/notes.txt')).text();
+const blob = await (await fetch('/files/photo.png')).blob();</code></pre>
+
+<p>
+    The response carries a <code>Content-Type</code> guessed from the extension,
+    <code>Content-Length</code>, <code>Last-Modified</code> and an <code>ETag</code>.
+    Send that ETag back as <code>If-None-Match</code> and an unchanged file answers
+    <code>304</code> with no body.
+</p>
+
+<p>
+    Add <code>?download</code> to make the browser treat the response as an attachment
+    rather than displaying it — the <code>Content-Disposition</code> header is set for
+    you.
+</p>
+
+<h3>Listing a folder</h3>
+
+<pre><code>const { path, entries } = await (await fetch('/files/reports/')).json();</code></pre>
+
+<pre><code>{
+  "path": "reports",
+  "entries": [
+    { "name": "2026",     "type": "directory", "size": null,  "lastModified": "2026-08-25T13:40:41Z" },
+    { "name": "march.pdf", "type": "file",     "size": 48210, "lastModified": "2026-08-24T09:12:03Z" }
+  ]
+}</code></pre>
+
+<p class="muted">
+    Folders come first, then names in case-insensitive order — a stable order, so a
+    listing does not reshuffle itself between refreshes. <code>size</code> is
+    <code>null</code> for a directory. Requesting a folder <em>without</em> the trailing
+    slash answers <code>301</code> to the canonical form rather than <code>404</code>.
+</p>
+
+<h3>Writing a file</h3>
+
+<p>
+    The body <em>is</em> the content — a string, a <code>Blob</code>, or a
+    <code>File</code> straight out of an <code>&lt;input type="file"&gt;</code>. No
+    multipart encoding, no wrapper object.
+</p>
+
+<pre><code>await fetch('/files/notes.txt', { method: 'PUT', body: 'hello' });
+
+// Straight from a file input
+await fetch(`/files/attachments/${file.name}`, { method: 'PUT', body: file });</code></pre>
+
+<p>
+    Answers <code>201</code> when the file is new, <code>204</code> when it replaced
+    one, and returns the new <code>ETag</code>. Missing parent folders are created.
+</p>
+
+<h3>Folders</h3>
+
+<pre><code>await fetch('/files/reports/', { method: 'PUT' });                  // create
+await fetch('/files/reports/?recursive=1', { method: 'DELETE' });   // delete with contents</code></pre>
+
+<p>
+    Deleting a non-empty folder without <code>?recursive</code> answers
+    <code>409</code> and deletes nothing: destroying content should never be the result
+    of an oversight. Symbolic links are removed as links — the deletion never descends
+    into what they point at.
+</p>
+
+<p class="muted">
+    <code>data</code> itself cannot be deleted (<code>403</code>): its contents belong
+    to your application, its existence does not.
+</p>
+
+<h2>SQLite</h2>
+
+<p>
+    Databases live in <code>data/db</code> and are reached by name. Three actions, all
+    <code>POST</code>:
+</p>
+
+<div class="scroll">
+<table>
+    <tr><th>Route</th><th>Does</th></tr>
+    <tr><td><span class="m m-post">POST</span> <code>/api/sqlite/{db}/query</code></td><td>Read — returns columns and rows</td></tr>
+    <tr><td><span class="m m-post">POST</span> <code>/api/sqlite/{db}/execute</code></td><td>Write — returns rows affected</td></tr>
+    <tr><td><span class="m m-post">POST</span> <code>/api/sqlite/{db}/transaction</code></td><td>Several statements, all or none</td></tr>
+</table>
+</div>
+
+<p class="muted">
+    <code>{db}</code> may contain folders — <code>/api/sqlite/archive/2026.db/query</code>
+    is valid — as long as it stays inside <code>data/db</code>. A <code>GET</code> on
+    this space answers <code>405</code>: that is the route confirming it is there, not
+    a fault.
+</p>
+
+<h3>Writing</h3>
+
+<pre><code>await fetch('/api/sqlite/app.db/execute', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        sql: 'INSERT INTO notes (text) VALUES ($text)',
+        parameters: { $text: 'hello' }
+    })
+});
+
+// → { "rowsAffected": 1, "lastInsertRowId": 7 }</code></pre>
+
+<p>
+    <strong>The database is created by the first write.</strong> Open with your
+    <code>CREATE TABLE IF NOT EXISTS</code> — querying a database that does not exist
+    yet answers <code>404</code> rather than inventing an empty one.
+</p>
+
+<h3>Reading</h3>
+
+<pre><code>const { columns, rows } = await (await fetch('/api/sqlite/app.db/query', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sql: 'SELECT id, name FROM people WHERE age &gt; $min',
+                           parameters: { $min: 18 } })
+})).json();
+
+// { "columns": ["id", "name"], "rows": [[1, "Alice"], [2, "Bob"]] }</code></pre>
+
+<p class="muted">
+    Columns and rows are kept apart rather than merged into objects, so two columns of
+    the same name stay distinct — which an object would silently collapse.
+</p>
+
+<h3>Transactions</h3>
+
+<pre><code>await fetch('/api/sqlite/app.db/transaction', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        commands: [
+            { sql: 'UPDATE accounts SET balance = balance - $n WHERE id = $a',
+              parameters: { $n: 100, $a: 1 } },
+            { sql: 'UPDATE accounts SET balance = balance + $n WHERE id = $b',
+              parameters: { $n: 100, $b: 2 } }
+        ]
+    })
+});</code></pre>
+
+<p>
+    All of them are applied, or none. The response reports the totals:
+    <code>{ "rowsAffected": 2, "lastInsertRowId": 0 }</code>.
+</p>
+
+<h3>Parameters and types</h3>
+
+<p>
+    Named parameters mean you never concatenate values into SQL. JSON types map
+    directly:
+</p>
+
+<div class="scroll">
+<table>
+    <tr><th>JSON</th><th>SQLite</th></tr>
+    <tr><td><code>"text"</code></td><td>TEXT</td></tr>
+    <tr><td><code>42</code> / <code>3.14</code></td><td>INTEGER / REAL</td></tr>
+    <tr><td><code>true</code> / <code>false</code></td><td>INTEGER 1 / 0</td></tr>
+    <tr><td><code>null</code></td><td>NULL</td></tr>
+    <tr><td><code>{ "base64": "SGVsbG8=" }</code></td><td>BLOB</td></tr>
+</table>
+</div>
+
+<p class="muted">
+    Binary values travel both ways as <code>{ "base64": … }</code> — a BLOB read back
+    from a query arrives in that same shape.
+</p>
+
+<div class="note">
+    <p>
+        <strong><code>ATTACH</code> is disabled.</strong> A database can only ever be
+        the one named in the URL, so a statement cannot reach across into another file
+        on the disk. <code>VACUUM INTO</code> relies on the same mechanism and is
+        therefore unavailable too — copy the <code>.db</code> file through
+        <code>/files</code> if you need a backup.
+    </p>
+</div>
+
+<h2>Identity</h2>
+
+<pre><code>const app = await (await fetch('/api/app')).json();</code></pre>
+
+<pre><code>{
+  "name": "Inventory Manager",
+  "windowTitle": "Inventory Manager — 2026 Edition",
+  "version": "2.4.1",
+  "company": "Kevin's Workshop",
+  "engine": {
+    "name": "Proton",
+    "version": "1.0.0",
+    "license": "MIT",
+    "copyright": "Copyright (c) 2026 Kevin Belanger"
+  }
+}</code></pre>
+
+<p>
+    Your application reads its own name and version from the executable, instead of
+    repeating them in your code where they drift out of date. Read-only —
+    anything but <code>GET</code> or <code>HEAD</code> answers <code>405</code>.
+</p>
+
+<p class="muted">
+    On the plain engine, <code>version</code> and <code>company</code> are
+    <code>null</code>: they only exist for an executable produced by
+    <code>/config</code>. <code>engine</code> is always present, and carries the MIT
+    attribution the licence requires.
+</p>
+
+<h2>Errors</h2>
+
+<p>
+    Every failure answers with the same envelope. The <code>code</code> is stable and
+    meant for your program; the <code>message</code> is for humans and may change.
+</p>
+
+<pre><code>{
+  "error": {
+    "code": "directory_not_empty",
+    "message": "The directory is not empty. Add ?recursive=1 to delete its contents.",
+    "details": { "path": "reports" }
+  }
+}</code></pre>
+
+<div class="scroll">
+<table>
+    <tr><th>Status</th><th>Code</th><th>When</th></tr>
+    <tr><td>400</td><td><code>invalid_request</code></td><td>Body is not valid JSON, or <code>sql</code> is missing</td></tr>
+    <tr><td>403</td><td><code>invalid_path</code></td><td>The path leaves <code>data</code>, or holds invalid characters</td></tr>
+    <tr><td>404</td><td><code>not_found</code></td><td>No such file, folder, database or action</td></tr>
+    <tr><td>405</td><td><code>method_not_allowed</code></td><td>Wrong method — an <code>Allow</code> header says which are accepted</td></tr>
+    <tr><td>409</td><td><code>directory_not_empty</code></td><td>Deleting a non-empty folder without <code>?recursive</code></td></tr>
+    <tr><td>409</td><td><code>not_a_file</code> / <code>not_a_directory</code></td><td>A file sits where you addressed a folder, or the reverse</td></tr>
+    <tr><td>422</td><td><code>sql_failed</code></td><td>SQLite refused the statement — its own message is passed through</td></tr>
+    <tr><td>500</td><td><code>read_failed</code> / <code>write_failed</code> / <code>delete_failed</code></td><td>Disk full, file locked, permissions</td></tr>
+    <tr><td>501</td><td><code>not_implemented</code></td><td>A reserved route Proton does not implement</td></tr>
+    <tr><td>500</td><td><code>unexpected_error</code></td><td>Anything that escaped the rest — written to the log</td></tr>
+</table>
+</div>
+
+<p class="muted">
+    A <code>422</code> carries SQLite's own error text — <em>no such table</em>,
+    <em>syntax error</em> — plus its <code>sqliteErrorCode</code> in
+    <code>details</code>. A <code>500</code> reports only the exception type, never a
+    physical path: your application reasons in paths relative to <code>data</code> and
+    has no business knowing where that sits.
+</p>
+
+<h2>Limits and behaviour</h2>
+
+<ul>
+    <li><strong>Request bodies are unlimited on <code>/files</code></strong> — an
+        upload streams straight to disk. <code>/api</code> is capped at 32 MB, since
+        those bodies are parsed in memory.</li>
+    <li><strong>No concurrency control.</strong> A Proton application is local and
+        single-instance; last write wins.</li>
+    <li><strong>No origin restriction.</strong> The server listens on
+        <code>127.0.0.1</code> only, so anything that could reach it is already running
+        on the machine.</li>
+    <li><strong>Paths are confined to <code>data</code>.</strong> Traversal
+        (<code>../</code>), absolute paths, drive letters and UNC paths are rejected
+        with <code>403</code> before anything touches the disk.</li>
+</ul>
+
+</main>
+
+<footer class="site-footer">
+<div>
+    <a href="https://github.com/kevin-belanger/Proton">GitHub</a>
+    <a href="https://github.com/kevin-belanger/Proton/releases">Releases</a>
+    <a href="https://github.com/kevin-belanger/Proton/blob/main/LICENSE">MIT License</a>
+    <p style="margin-top:.75rem">© 2026 Kevin Belanger</p>
+</div>
+</footer>
+
+</body>
+</html>

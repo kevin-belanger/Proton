@@ -2,7 +2,7 @@
 
 **Date :** 2026-08-24
 **Objet :** vérifier expérimentalement la faisabilité des §37 à §44
-**Verdict :** faisable — voir [`docs/01-personnalisation-executable.md`](../../docs/01-personnalisation-executable.md)
+**Verdict :** faisable — voir [`notes/01-personnalisation-executable.md`](../../notes/01-personnalisation-executable.md)
 pour le procédé, les décisions arrêtées et les règles d'implémentation.
 
 Ce document conserve le **protocole et les mesures**. Le savoir technique réutilisable
