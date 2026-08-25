@@ -13,7 +13,8 @@ Une application Proton se distribue par simple copie :
 MonApplication/
 ├── MonApplication.exe
 ├── app/          l'application Web
-└── data/         ses fichiers et bases de données
+├── data/         ses fichiers
+└── db/           ses bases SQLite
 ```
 
 Ni installateur, ni serveur, ni runtime à installer séparément.
@@ -23,7 +24,7 @@ Ni installateur, ni serveur, ni runtime à installer séparément.
 ## Démarrer
 
 Téléchargez `Proton.exe`, placez-le dans un dossier vide et lancez-le. Il y crée
-`app` et `data`, puis affiche une page d'accueil.
+`app`, `data` et `db`, puis affiche une page d'accueil.
 
 Remplacez ensuite le contenu de `app` par le vôtre. Vos pages sont servies à la
 racine :
@@ -91,7 +92,8 @@ Vous obtenez `GestionInventaire.exe` : même moteur, avec son nom, son icône et
 métadonnées Windows. `Proton.exe` reste intact, et le dossier `config` peut être
 supprimé — l'exécutable généré porte sa configuration en lui.
 
-Distribuez alors `GestionInventaire.exe` + `app/`. Rien d'autre.
+Distribuez alors `GestionInventaire.exe` + `app/`. Rien d'autre : `data` et `db` se
+créent au premier démarrage.
 
 ---
 
@@ -104,12 +106,12 @@ expose ses API et sait produire des exécutables personnalisés.
 | --- | --- |
 | 1–2 | Fenêtre, WebView2, Kestrel, port automatique, initialisation |
 | 3 | API de fichiers, dossiers, `/api/app` |
-| 4 | API SQLite — requêtes, écritures, transactions |
+| 4 | API SQLite — requêtes, écritures, transactions ; bases isolées dans `db` |
 | 5 | Journal de diagnostic, traitement uniforme des erreurs |
 | 6 | Mode `/config` — icône, métadonnées, configuration embarquée |
 | 7 | Publication self-contained, fichier unique, compressé |
 
-**114 tests automatisés.** Les critères d'acceptation de la V1 sont récapitulés en
+**128 tests automatisés.** Les critères d'acceptation de la V1 sont récapitulés en
 fin d'analyse fonctionnelle.
 
 Ce qui reste hors périmètre est énuméré en §60, et les simplifications assumées dans

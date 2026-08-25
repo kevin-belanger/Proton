@@ -177,7 +177,7 @@ public sealed class SqliteApiTests : IAsyncLifetime
             "/api/sqlite/jamais-vue.db/query", new { sql = "SELECT 1" });
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        Assert.False(File.Exists(Path.Combine(_root, "data", "jamais-vue.db")));
+        Assert.False(File.Exists(Path.Combine(_root, "db", "jamais-vue.db")));
     }
 
     [Fact]
@@ -185,7 +185,27 @@ public sealed class SqliteApiTests : IAsyncLifetime
     {
         await Execute("CREATE TABLE t (x INTEGER)");
 
-        Assert.True(File.Exists(Path.Combine(_root, "data", "app.db")));
+        Assert.True(File.Exists(Path.Combine(_root, "db", "app.db")));
+    }
+
+    [Fact]
+    public async Task Une_base_n_est_pas_joignable_par_l_api_de_fichiers()
+    {
+        await Execute("CREATE TABLE t (x INTEGER)");
+
+        // Les bases vivent dans `db`, hors de portée de /data (§26). Sans cette
+        // séparation, un PUT maladroit sur app.db la détruirait, et un GET la
+        // livrerait comme un fichier ordinaire.
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await _client.GetAsync("/data/app.db")).StatusCode);
+
+        // Le dossier des bases n'est pas davantage accessible.
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await _client.GetAsync("/data/../db/app.db")).StatusCode);
+
+        // Et il n'apparaît pas dans le contenu de `data`.
+        string listing = await _client.GetStringAsync("/data/");
+        Assert.DoesNotContain("app.db", listing, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -195,7 +215,7 @@ public sealed class SqliteApiTests : IAsyncLifetime
             "/api/sqlite/bases/inventaire.db/execute", new { sql = "CREATE TABLE t (x INTEGER)" });
 
         Assert.True(response.IsSuccessStatusCode);
-        Assert.True(File.Exists(Path.Combine(_root, "data", "bases", "inventaire.db")));
+        Assert.True(File.Exists(Path.Combine(_root, "db", "bases", "inventaire.db")));
     }
 
     // --- §26 et §34 : confinement --------------------------------------------------------

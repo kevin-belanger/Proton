@@ -11,16 +11,17 @@ namespace Proton.Bootstrap;
 public static class Scaffolding
 {
     /// <summary>Rapport de ce qui a réellement été créé, à des fins de diagnostic.</summary>
-    public sealed record Result(bool CreatedApp, bool CreatedData, bool CreatedIndex);
+    public sealed record Result(bool CreatedApp, bool CreatedData, bool CreatedDb, bool CreatedIndex);
 
     /// <summary>
-    /// Vérifie l'existence de <c>app</c> et <c>data</c>, et les crée au besoin.
-    /// Le dossier <c>config</c> n'est jamais créé lors d'un démarrage normal (§8).
+    /// Vérifie l'existence de <c>app</c>, <c>data</c> et <c>db</c>, et les crée au
+    /// besoin. Le dossier <c>config</c> n'est jamais créé lors d'un démarrage normal (§8).
     /// </summary>
     public static Result Ensure(ApplicationPaths paths)
     {
         bool createdApp = CreateDirectoryIfMissing(paths.App);
         bool createdData = CreateDirectoryIfMissing(paths.Data);
+        bool createdDb = CreateDirectoryIfMissing(paths.Db);
 
         // L'index n'est engendré que si le dossier `app` ne contient aucune page
         // d'accueil — y compris lorsque le dossier existait déjà, mais vide.
@@ -33,7 +34,7 @@ public static class Scaffolding
             createdIndex = true;
         }
 
-        return new Result(createdApp, createdData, createdIndex);
+        return new Result(createdApp, createdData, createdDb, createdIndex);
     }
 
     private static bool CreateDirectoryIfMissing(string path)
@@ -165,8 +166,8 @@ public static class Scaffolding
             </p>
             <p class="discret">
                 Pour commencer, remplacez le contenu du dossier <code>app</code> par
-                le vôtre. Vos fichiers et vos bases de données vont dans
-                <code>data</code>.
+                le vôtre. Vos fichiers vont dans <code>data</code>, vos bases de
+                données dans <code>db</code>.
             </p>
 
             <h2>Services</h2>

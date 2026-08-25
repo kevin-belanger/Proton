@@ -16,6 +16,7 @@ public sealed class ApplicationPaths
         Root = root;
         App = Path.Combine(root, "app");
         Data = Path.Combine(root, "data");
+        Db = Path.Combine(root, "db");
         Config = Path.Combine(root, "config");
     }
 
@@ -30,6 +31,17 @@ public sealed class ApplicationPaths
 
     /// <summary>Espace de stockage accessible à l'application Web (§13).</summary>
     public string Data { get; }
+
+    /// <summary>
+    /// Bases SQLite (§26).
+    /// </summary>
+    /// <remarks>
+    /// Séparé de <see cref="Data"/> et sans route qui l'expose : une base n'est
+    /// joignable que par <c>/api/sqlite</c>. Placée dans <c>data</c>, elle serait
+    /// aussi un fichier ordinaire — téléchargeable, et surtout écrasable par un
+    /// <c>PUT</c> maladroit qui la détruirait.
+    /// </remarks>
+    public string Db { get; }
 
     /// <summary>Outil de personnalisation. N'est jamais créé automatiquement (§8).</summary>
     public string Config { get; }

@@ -12,6 +12,9 @@ capacités de Proton V1 dans une application réaliste :
 | `/data` listing (§21) | Les pièces jointes sont **déduites** du contenu du dossier |
 | `/data` suppression (§20) | Retrait d'une pièce jointe, et nettoyage à la suppression d'une tâche |
 
+Les tâches vivent dans `db/todo.db`, les pièces jointes dans `data/attachments/` :
+une base n'est jamais un fichier ordinaire (§26).
+
 ## Essayer
 
 Copier le contenu de ce dossier dans le `app\` d'une application Proton :
@@ -20,10 +23,9 @@ Copier le contenu de ce dossier dans le `app\` d'une application Proton :
 xcopy /E /I /Y samples\Todo C:\proton\test\app
 ```
 
-> **En l'état, l'application affiche un avertissement et s'arrête là.** Les API des
-> phases 3 et 4 n'existent pas encore et répondent `501`. C'est voulu : elle a été
-> écrite **avant** elles, pour définir leur contrat par l'usage plutôt que dans
-> l'abstrait.
+Elle a été écrite **avant** les API qu'elle consomme, pour définir leur contrat par
+l'usage plutôt que dans l'abstrait. Elles existent désormais, et l'application
+fonctionne sans avoir été retouchée.
 
 ## Choix de conception
 

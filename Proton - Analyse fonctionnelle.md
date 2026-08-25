@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 1.2
+**Version du document :** 1.3
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 1.3 — les bases SQLite quittent `data` pour un dossier `db` que nulle route n'expose (§26.1).
 * 1.2 — §41 complété : la fenêtre doit recevoir l'icône de l'exécutable, Windows Forms ne la reprenant pas seule.
 * 1.1 — §51.2 implémenté : une pièce jointe est téléchargée puis ouverte avec l'application associée, au lieu d'être confiée au navigateur.
 * 1.0 — les sept phases sont implémentées ; état des critères d'acceptation relevé en §65.1.
@@ -71,11 +72,15 @@ MonApplication/
 │   ├── js/
 │   └── ...
 │
-└── data/
+├── data/
+│   └── ...
+│
+└── db/
     └── ...
 ```
 
-Le dossier `data` peut être absent lors de la distribution s'il ne contient encore aucune donnée.
+Les dossiers `data` et `db` peuvent être absents lors de la distribution s'ils ne
+contiennent encore aucune donnée : ils sont créés au démarrage.
 
 Lorsqu'il est exécuté, `MonApplication.exe` doit :
 
@@ -210,14 +215,15 @@ L'architecture ne doit cependant pas coupler inutilement le moteur HTTP, la gest
 
 # 6. Structure d'une application Proton
 
-Trois dossiers possèdent une signification particulière.
+Quatre dossiers possèdent une signification particulière.
 
 ```text
 Executable.exe
 │
-├── app/
-├── data/
-└── config/
+├── app/       l'application Web (§7)
+├── data/      ses fichiers, exposés par /data (§13)
+├── db/        ses bases SQLite, exposées par /api/sqlite (§26)
+└── config/    outil de personnalisation, non distribué (§36)
 ```
 
 Ils doivent toujours être recherchés relativement au dossier contenant l'exécutable.
@@ -285,6 +291,7 @@ Lors du démarrage normal, Proton doit vérifier l'existence de :
 ```text
 app/
 data/
+db/
 ```
 
 Si `app` n'existe pas, Proton doit :
@@ -309,7 +316,7 @@ faire — et sert de premier diagnostic si quelque chose ne répond pas.
 Une application de démonstration complète n'a pas sa place ici : elle vit dans
 `samples` (§64) et n'a pas à voyager dans chaque exécutable produit.
 
-Si `data` n'existe pas, Proton doit simplement le créer.
+Si `data` ou `db` n'existent pas, Proton doit simplement les créer.
 
 Proton ne doit jamais écraser automatiquement un fichier utilisateur déjà existant.
 
@@ -1030,13 +1037,14 @@ data/application.db
 
 # 26. Emplacement des bases SQLite
 
-Toutes les bases SQLite gérées par Proton doivent être situées dans `data`.
-
-Exemple :
+Toutes les bases SQLite gérées par Proton sont situées dans `db`, dossier distinct de
+`data` :
 
 ```text
-data/
-└── application.db
+db/
+├── application.db
+└── archives/
+    └── 2025.db
 ```
 
 Une application ne doit pas pouvoir utiliser l'API SQLite pour ouvrir arbitrairement :
@@ -1051,7 +1059,48 @@ ou :
 ..\...
 ```
 
-Les mêmes règles de confinement que l'API de fichiers doivent s'appliquer.
+Les mêmes règles de confinement que l'API de fichiers s'appliquent, avec `db` pour
+racine.
+
+## 26.1 Pourquoi un dossier séparé
+
+Aucune route n'expose `db`. Une base n'est joignable que par `/api/sqlite`, jamais
+comme un fichier.
+
+Placée dans `data`, elle serait à la fois une base et un fichier ordinaire. Les
+conséquences ne sont pas théoriques :
+
+* `GET /data/application.db` la livrerait entière;
+* `PUT /data/application.db` la **détruirait** — le moteur répondrait ensuite
+  `file is not a database`;
+* une écriture pendant que SQLite l'utilise pourrait la corrompre durablement.
+
+La séparation supprime ces cas par construction, sans qu'il faille reconnaître un
+fichier de base pour le protéger.
+
+Elle rend aussi la structure plus lisible : le développeur voit d'un coup d'œil ce
+qui relève de ses fichiers et ce qui relève de ses bases.
+
+## 26.2 Sauvegarder une base
+
+Une base n'étant plus téléchargeable par `/data`, une application qui veut en
+conserver une copie exporte ses données : elle les lit par `/query` et les écrit dans
+`data` au format de son choix.
+
+`VACUUM INTO` **ne fonctionne pas** : la limite qui interdit `ATTACH` (§34) le bloque
+également, ces deux commandes s'appuyant sur le même mécanisme.
+
+```text
+SQLite Error 1: 'too many attached databases - max 0'
+```
+
+C'est le comportement voulu. `VACUUM INTO` accepte un chemin arbitraire et
+permettrait d'écrire un fichier n'importe où sur le disque — précisément ce que le
+confinement des bases cherche à éviter.
+
+Une copie de base fidèle, produite par Proton lui-même vers `data`, pourra faire
+l'objet d'une route dédiée dans une version ultérieure. Elle n'est pas nécessaire à
+la V1 : exporter ses propres données reste à la portée de toute application.
 
 ---
 
@@ -1262,6 +1311,14 @@ Les situations `busy` ou `locked` doivent être gérées proprement et ne doiven
 Même si Proton accepte volontairement du SQL provenant de son application Web, l'API ne doit pas permettre au SQL de contourner l'isolation du dossier `data`.
 
 Les fonctionnalités SQLite permettant d'ouvrir ou d'écrire arbitrairement d'autres fichiers doivent être évaluées et, lorsque nécessaire, bloquées.
+
+La mesure retenue est une limite du moteur : `SQLITE_LIMIT_ATTACHED` posée à zéro sur
+chaque connexion. Un filtre appliqué au texte de la requête se contournerait ; une
+limite du moteur, non.
+
+Elle ferme deux portes à la fois. `ATTACH` ne peut plus lier une base extérieure, et
+`VACUUM INTO` — qui accepte un chemin arbitraire et s'appuie sur le même mécanisme —
+cesse de fonctionner (§26.2).
 
 Cela concerne notamment les mécanismes pouvant permettre :
 
