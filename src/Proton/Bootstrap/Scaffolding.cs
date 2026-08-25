@@ -13,7 +13,8 @@ public static class Scaffolding
 {
     /// <summary>Rapport de ce qui a réellement été créé, à des fins de diagnostic.</summary>
     public sealed record Result(
-        bool CreatedApp, bool CreatedData, bool CreatedIndex, bool ExtractedData);
+        bool CreatedApp, bool CreatedData, bool CreatedIndex, bool ExtractedData,
+        bool CreatedConfig);
 
     /// <summary>
     /// Prépare les dossiers de l'application (§8, §39.1).
@@ -28,12 +29,14 @@ public static class Scaffolding
     /// l'utilisateur, ce qui ne se diagnostique plus.
     ///
     /// <b>Moteur générique.</b> Sans archive, <c>app</c> est créé sur le disque avec
-    /// une page d'accueil : c'est le point de départ du développeur (§8).
+    /// une page d'accueil, et <c>config</c> avec un modèle prêt à modifier : ce sont
+    /// les deux points de départ du développeur (§8, §8.2).
     /// </summary>
     public static Result Ensure(ApplicationPaths paths, bool hasEmbeddedApp)
     {
         bool createdApp = false;
         bool createdIndex = false;
+        bool createdConfig = false;
 
         if (!hasEmbeddedApp)
         {
@@ -48,6 +51,8 @@ public static class Scaffolding
                 File.WriteAllText(index, WelcomePage, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 createdIndex = true;
             }
+
+            createdConfig = EnsureConfigTemplate(paths);
         }
 
         bool extracted = TryExtractData(paths);
@@ -56,8 +61,105 @@ public static class Scaffolding
         CreateDirectoryIfMissing(paths.Files);
         CreateDirectoryIfMissing(paths.Db);
 
-        return new Result(createdApp, createdData, createdIndex, extracted);
+        return new Result(createdApp, createdData, createdIndex, extracted, createdConfig);
     }
+
+    /// <summary>
+    /// Dépose le modèle de personnalisation dans <c>config</c> (§8.2).
+    /// </summary>
+    /// <remarks>
+    /// Seul le moteur générique le reçoit. Un exécutable produit par <c>/generate</c>
+    /// s'adresse à un utilisateur final, à qui un dossier d'outillage ne servirait
+    /// qu'à encombrer — et à qui rien n'explique ce qu'il contient.
+    ///
+    /// Chaque fichier est écrit séparément et seulement s'il manque : un développeur
+    /// qui a réglé son <c>config.json</c> mais supprimé son icône récupère l'icône
+    /// sans perdre son réglage.
+    /// </remarks>
+    private static bool EnsureConfigTemplate(ApplicationPaths paths)
+    {
+        bool created = CreateDirectoryIfMissing(paths.Config);
+
+        string configuration = Path.Combine(paths.Config, "config.json");
+
+        if (!File.Exists(configuration))
+        {
+            File.WriteAllText(configuration, ConfigTemplate,
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+            created = true;
+        }
+
+        string icon = Path.Combine(paths.Config, "icon.ico");
+
+        if (!File.Exists(icon) && TryWriteDefaultIcon(icon))
+            created = true;
+
+        return created;
+    }
+
+    /// <summary>
+    /// Écrit l'icône du moteur, que le développeur remplacera par la sienne.
+    /// </summary>
+    /// <remarks>
+    /// Le fichier entier est embarqué plutôt qu'extrait des ressources Win32 du PE :
+    /// on n'en tirerait qu'une seule résolution, et l'exécutable que le développeur
+    /// produirait ensuite hériterait d'une icône dégradée sans que rien ne le signale.
+    ///
+    /// Un échec n'interrompt pas le démarrage : l'absence d'icône est rattrapable, et
+    /// le mode <c>/generate</c> l'annonce explicitement.
+    /// </remarks>
+    private static bool TryWriteDefaultIcon(string destination)
+    {
+        try
+        {
+            using Stream? source = typeof(Scaffolding).Assembly
+                .GetManifestResourceStream(DefaultIconResource);
+
+            if (source is null)
+                return false;
+
+            using FileStream file = File.Create(destination);
+            source.CopyTo(file);
+            return true;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            Infrastructure.DiagnosticLog.Error("The default icon could not be written.", ex);
+            return false;
+        }
+    }
+
+    private const string DefaultIconResource = "Proton.Default.ico";
+
+    /// <summary>
+    /// Modèle de <c>config/config.json</c> (§8.2).
+    /// </summary>
+    /// <remarks>
+    /// Il porte ses propres commentaires : le format les accepte
+    /// (<c>JsonCommentHandling.Skip</c>), et un fichier qui s'explique lui-même
+    /// dispense d'aller chercher la documentation pour deux champs.
+    ///
+    /// Les valeurs livrées sont valides telles quelles : <c>/generate</c> aboutit
+    /// sans qu'on y touche, et produit <c>MyApplication.exe</c>.
+    /// </remarks>
+    private const string ConfigTemplate = """
+        {
+            // Name of your application. It appears in the window, in the Windows
+            // properties of the file produced, and on GET /api/app.
+            "name": "My Application",
+
+            // The executable to produce. ".exe" is added if you leave it off.
+            "executableName": "MyApplication",
+
+            // Title bar, and the file's description in Windows. Defaults to "name".
+            "windowTitle": "My Application",
+
+            "version": "1.0.0",
+
+            "window": { "width": 1280, "height": 800, "resizable": true }
+        }
+
+        """;
 
     /// <summary>
     /// Dépose le contenu initial de <c>data</c>, si l'archive en porte.

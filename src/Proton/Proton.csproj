@@ -58,6 +58,14 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
   </ItemGroup>
 
+  <!-- L'icône du moteur, déposée dans `config/icon.ico` au premier démarrage (§8.2).
+       `ApplicationIcon` la place dans les ressources Win32 du PE, d'où l'on ne peut
+       extraire qu'une seule résolution : il faut le fichier entier pour que celle que
+       le développeur embarquera ensuite garde ses neuf tailles. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Proton.ico" LogicalName="Proton.Default.ico" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Proton.Tests" />
   </ItemGroup>

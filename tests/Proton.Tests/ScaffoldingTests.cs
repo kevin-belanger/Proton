@@ -32,13 +32,59 @@ public sealed class ScaffoldingTests : IDisposable
     }
 
     [Fact]
-    public void Ne_cree_jamais_le_dossier_config()
+    public void Depose_un_modele_de_configuration_pret_a_modifier()
     {
+        Scaffolding.Result result = Scaffolding.Ensure(Paths, hasEmbeddedApp: false);
+
+        Assert.True(result.CreatedConfig);
+        Assert.True(Directory.Exists(Paths.Config));
+
+        string configuration = File.ReadAllText(Path.Combine(Paths.Config, "config.json"));
+
+        // Les deux champs obligatoires sont renseignés : `/generate` aboutit sans
+        // qu'on touche au fichier (§8.2).
+        Assert.Contains("\"name\"", configuration, StringComparison.Ordinal);
+        Assert.Contains("\"executableName\"", configuration, StringComparison.Ordinal);
+
+        // Le modèle s'explique lui-même — le format accepte les commentaires.
+        Assert.Contains("//", configuration, StringComparison.Ordinal);
+
+        // L'icône doit garder ses neuf résolutions : extraite du PE, elle n'en aurait
+        // qu'une, et l'exécutable produit hériterait d'une icône dégradée (§8.2).
+        byte[] icon = File.ReadAllBytes(Path.Combine(Paths.Config, "icon.ico"));
+
+        Assert.Equal(0, icon[0]);            // en-tête ICO : réservé
+        Assert.Equal(1, icon[2]);            // type 1 = icône
+        Assert.True(icon[4] >= 5, $"L'icône ne porte que {icon[4]} résolution(s).");
+    }
+
+    [Fact]
+    public void Un_executable_personnalise_ne_recoit_aucun_dossier_config()
+    {
+        Scaffolding.Result result = Scaffolding.Ensure(Paths, hasEmbeddedApp: true);
+
+        // `config` est un outil de fabrication. Un exécutable produit s'adresse à un
+        // utilisateur final, à qui il n'apprendrait rien et ne ferait qu'encombrer
+        // (§8.2).
+        Assert.False(result.CreatedConfig);
+        Assert.False(Directory.Exists(Paths.Config));
+    }
+
+    [Fact]
+    public void Ne_remplace_jamais_une_configuration_existante()
+    {
+        Directory.CreateDirectory(Paths.Config);
+        string configuration = Path.Combine(Paths.Config, "config.json");
+        File.WriteAllText(configuration, "{ \"name\": \"À moi\" }");
+
         Scaffolding.Ensure(Paths, hasEmbeddedApp: false);
 
-        // Le dossier `config` est un outil de personnalisation : un démarrage normal
-        // ne doit pas le faire apparaître dans le dossier de l'utilisateur (§8).
-        Assert.False(Directory.Exists(Paths.Config));
+        // Règle absolue de §8 : ce que l'utilisateur a écrit lui appartient.
+        Assert.Equal("{ \"name\": \"À moi\" }", File.ReadAllText(configuration));
+
+        // L'icône manquante est tout de même déposée : les fichiers sont traités
+        // séparément.
+        Assert.True(File.Exists(Path.Combine(Paths.Config, "icon.ico")));
     }
 
     [Fact]

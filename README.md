@@ -32,8 +32,8 @@ No installer, no server, no runtime to install separately.
 
 ## Getting started
 
-Download `Proton.exe`, put it in an empty folder and run it. It creates `app` and
-`data` there, then shows a starter page.
+Download `Proton.exe`, put it in an empty folder and run it. It creates `app`,
+`config` and `data` there, then shows a starter page.
 
 Then replace the contents of `app` with your own. Your pages are served from the root:
 
@@ -79,7 +79,8 @@ turn it into a program of its own.
 
 ### Personalising the executable
 
-Prepare `config/config.json` and `config/icon.ico`:
+`config/config.json` and `config/icon.ico` are already there, filled in with working
+values — packaging succeeds before you edit anything. Then make them yours:
 
 ```json
 {

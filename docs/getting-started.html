@@ -46,17 +46,21 @@
         <h3>Run it</h3>
         <p>
             A window opens on a starter page that checks the engine's services. Proton
-            has created two folders beside itself:
+            has created three folders beside itself:
         </p>
 <pre><code>MyApp/
 ├── Proton.exe
 ├── app/            your web application
+├── config/         config.json + icon.ico, for packaging later
 └── data/
     ├── files/      served at /files
     └── db/         your SQLite databases</code></pre>
         <p class="muted">
-            <code>config</code> is not created — it only appears when you decide to
-            package the application.
+            <code>config</code> arrives filled in and ready — a commented
+            <code>config.json</code> and Proton's own icon, both meant to be replaced.
+            You can run <code>Proton.exe /generate</code> right now and get a working
+            <code>MyApplication.exe</code>. Executables you produce never create that
+            folder: it is a tool for building, not for using.
         </p>
     </li>
     <li>

@@ -35,8 +35,8 @@
 <h2>The configuration</h2>
 
 <p>
-    Create a <code>config</code> folder next to <code>Proton.exe</code>, holding a
-    <code>config.json</code> and — optionally — an <code>icon.ico</code>:
+    <code>Proton.exe</code> creates a <code>config</code> folder on its first run,
+    holding a <code>config.json</code> and an <code>icon.ico</code>:
 </p>
 
 <pre><code>MyApp/
@@ -45,6 +45,12 @@
 └── config/
     ├── config.json
     └── icon.ico</code></pre>
+
+<p>
+    Both arrive filled in with working values, so packaging succeeds before you edit
+    anything — you get <code>MyApplication.exe</code> carrying Proton's own icon. Then
+    replace them with yours.
+</p>
 
 <p>Two properties are required. Everything else has a sensible default:</p>
 

@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 1.11
+**Version du document :** 1.12
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 1.12 — le moteur générique dépose un modèle dans `config` au premier démarrage (§8.2).
 * 1.11 — le drapeau `/config` devient `/generate` (§35.1); l'ancienne orthographe reste acceptée.
 * 1.10 — la documentation devient un site de quatre pages; les notes techniques quittent `docs/` pour `notes/` (§63.1).
 * 1.9 — règle de langue : tout ce que Proton dit à son utilisateur passe en anglais (§63.2).
@@ -362,7 +363,39 @@ Si `data` n'existe pas, Proton doit le créer, avec ses deux sous-dossiers.
 
 Proton ne doit jamais écraser automatiquement un fichier utilisateur déjà existant.
 
-Le dossier `config` ne doit pas être créé automatiquement lors d'un démarrage normal.
+## 8.2 Le moteur générique dépose aussi un modèle de configuration
+
+*Remplace la règle « le dossier `config` ne doit pas être créé automatiquement ».*
+
+Cette règle traitait `config` comme un encombrement. Elle avait raison pour un
+exécutable produit, et tort pour le moteur générique : le développeur devra fabriquer
+ce dossier tôt ou tard, et rien dans le programme ne lui apprend le nom des deux
+champs obligatoires. Il lui fallait aller lire la documentation pour écrire quatre
+lignes.
+
+**Le moteur générique** crée donc `config` au premier démarrage, au même titre que
+`app`, avec :
+
+* un `config.json` **portant ses propres commentaires** — le format les accepte, et un
+  fichier qui s'explique dispense d'aller chercher ailleurs. Ses valeurs sont valides
+  telles quelles : `/generate` aboutit sans qu'on y touche et produit
+  `MyApplication.exe`;
+* l'icône du moteur, sous `icon.ico`, que le développeur remplace par la sienne.
+
+**Un exécutable produit par `/generate` n'en reçoit aucun.** Son utilisateur est un
+utilisateur final : le dossier ne lui apprendrait rien, et lui suggérerait des
+opérations qui ne le concernent pas. C'est la même distinction que pour `app` (§39.1),
+et elle se lit sur le même critère — l'exécutable porte-t-il une application embarquée.
+
+L'icône est **embarquée en entier** dans l'assembly plutôt qu'extraite des ressources
+Win32 du PE. `Icon.ExtractAssociatedIcon` n'en rend qu'une seule taille : l'exécutable
+que le développeur produirait ensuite hériterait d'une icône dégradée, sans que rien ne
+le signale. Le fichier livré porte ses neuf résolutions, de 16 à 256 pixels.
+
+Chaque fichier est traité séparément et n'est écrit que s'il manque. Un développeur qui
+a réglé son `config.json` mais supprimé son icône récupère l'icône sans perdre son
+réglage — la règle de §8 continue de s'appliquer : rien de ce que l'utilisateur a écrit
+n'est remplacé.
 
 ---
 
@@ -1428,7 +1461,9 @@ config/
 
 n'est pas un dossier utilisé par l'application finale.
 
-Il sert uniquement à fabriquer une version personnalisée de l'exécutable Proton.
+Il sert uniquement à fabriquer une version personnalisée de l'exécutable Proton. Le
+moteur générique le crée au premier démarrage avec un modèle prêt à modifier; un
+exécutable produit n'en reçoit jamais (§8.2).
 
 Exemple :
 
