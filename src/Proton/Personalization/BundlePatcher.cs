@@ -25,7 +25,7 @@ public static class BundlePatcher
     public static byte[] Personalize(
         byte[] source, string? icoPath, VersionInfo.Fields? version, string scratchDir, out Report report)
     {
-        byte[] stripped = EmbeddedConfig.Strip(source);
+        byte[] stripped = EmbeddedPackage.Strip(source);
         var info = PeInfo.Read(stripped, stripped.LongLength);
 
         if (!info.IsSingleFileBundle)

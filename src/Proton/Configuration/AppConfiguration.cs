@@ -51,7 +51,7 @@ public sealed record AppConfiguration
 
         try
         {
-            return EmbeddedConfig.TryRead(executable) ?? Default;
+            return EmbeddedPackage.ReadConfiguration(executable) ?? Default;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {

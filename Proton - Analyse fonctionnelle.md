@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 1.3
+**Version du document :** 1.4
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 1.4 — l'application est embarquée dans l'exécutable et servie depuis l'archive (§39.1) : la distribution se réduit à un fichier.
 * 1.3 — les bases SQLite quittent `data` pour un dossier `db` que nulle route n'expose (§26.1).
 * 1.2 — §41 complété : la fenêtre doit recevoir l'icône de l'exécutable, Windows Forms ne la reprenant pas seule.
 * 1.1 — §51.2 implémenté : une pièce jointe est téléchargée puis ouverte avec l'application associée, au lieu d'être confiée au navigateur.
@@ -63,24 +64,18 @@ La V1 doit permettre de distribuer une application sous une forme extrêmement s
 Une application Proton typique doit pouvoir être distribuée ainsi :
 
 ```text
-MonApplication/
-│
-├── MonApplication.exe
-├── app/
-│   ├── index.html
-│   ├── css/
-│   ├── js/
-│   └── ...
-│
-├── data/
-│   └── ...
-│
-└── db/
-    └── ...
+MonApplication.exe
 ```
 
-Les dossiers `data` et `db` peuvent être absents lors de la distribution s'ils ne
-contiennent encore aucune donnée : ils sont créés au démarrage.
+L'application Web est embarquée dans l'exécutable (§39.1). Au premier démarrage,
+celui-ci crée à côté de lui les dossiers dont il a besoin :
+
+```text
+MonApplication/
+├── MonApplication.exe
+├── data/
+└── db/
+```
 
 Lorsqu'il est exécuté, `MonApplication.exe` doit :
 
@@ -1461,6 +1456,46 @@ La configuration doit donc être intégrée dans l'exécutable généré d'une m
 La méthode a été arrêtée : la configuration est annexée **en fin de fichier**, après le
 bundle .NET, et non stockée comme ressource PE. Le format et les raisons de ce choix
 figurent dans `docs/01-personnalisation-executable.md`.
+
+## 39.1 L'application voyage avec le moteur
+
+Le mode `/config` embarque **toujours** le dossier `app` dans l'exécutable produit. Il
+n'est jamais extrait : l'application est servie directement depuis l'archive.
+
+C'est ce qui garantit qu'une application ne peut pas se désynchroniser de son moteur.
+Si `app` était déposé sur le disque au premier démarrage, il n'en bougerait plus :
+livrer une nouvelle version de l'exécutable laisserait l'utilisateur avec l'ancienne
+interface et le nouveau moteur — une situation silencieuse et pénible à diagnostiquer.
+
+La distribution se réduit donc à un seul fichier :
+
+```text
+MesTaches.exe        ← l'application entière
+```
+
+Au premier démarrage, l'exécutable crée `data` et `db`. Aucun dossier `app` n'apparaît.
+
+### Contenu initial
+
+```text
+Proton.exe /config data
+```
+
+Le paramètre `data` embarque également le contenu de `data` et `db` : modèles de
+documents, catalogue, base de référence pré-remplie.
+
+Ce contenu est déposé au démarrage **si et seulement si aucun des deux dossiers
+n'existe**. Dès qu'un seul est présent, rien n'est extrait.
+
+La règle est volontairement brutale. Une extraction partielle mélangerait des données
+livrées et des données de l'utilisateur, sans que rien ne distingue plus les unes des
+autres. Mieux vaut ne rien faire que produire un état inexplicable.
+
+### Développement
+
+Le moteur générique ne porte aucune archive : il crée `app` sur le disque et le sert
+depuis là (§8). C'est le mode de travail du développeur, qui modifie ses fichiers et
+recharge la fenêtre. L'archive n'apparaît qu'à la génération.
 
 ---
 

@@ -27,14 +27,23 @@ public sealed record GenerationResult(bool Success, string Message, string? Targ
 /// </summary>
 public static class ExecutableGenerator
 {
-    public static GenerationResult Run(string selfPath, string workingDirectory, TextWriter log)
+    /// <param name="embedUserFolders">
+    /// Embarquer aussi <c>data</c> et <c>db</c>, pour livrer un contenu initial (§39.1).
+    /// </param>
+    public static GenerationResult Run(
+        string selfPath, string workingDirectory, TextWriter log, bool embedUserFolders = false)
     {
         string configDirectory = Path.Combine(workingDirectory, "config");
         string configPath = Path.Combine(configDirectory, "config.json");
         string iconPath = Path.Combine(configDirectory, "icon.ico");
+        string appPath = Path.Combine(workingDirectory, EmbeddedPackage.AppFolder);
 
         log.WriteLine($"Source    : {selfPath}");
         log.WriteLine($"Config    : {configPath}");
+
+        if (!Directory.Exists(appPath))
+            return new GenerationResult(false,
+                $"« {appPath} » est introuvable. L'application à embarquer doit exister.");
 
         if (!File.Exists(configPath))
             return new GenerationResult(false, $"« {configPath} » est introuvable.");
@@ -97,8 +106,24 @@ public static class ExecutableGenerator
             if (!report.AlignmentPreserved)
                 return new GenerationResult(false, "L'alignement des assemblies n'a pas été préservé.");
 
-            byte[] final = EmbeddedConfig.Append(personalized, configuration);
+            List<EmbeddedPackage.FolderSource> folders =
+            [
+                new(EmbeddedPackage.AppFolder, appPath)
+            ];
+
+            if (embedUserFolders)
+            {
+                folders.Add(new(EmbeddedPackage.DataFolder, Path.Combine(workingDirectory, EmbeddedPackage.DataFolder)));
+                folders.Add(new(EmbeddedPackage.DbFolder, Path.Combine(workingDirectory, EmbeddedPackage.DbFolder)));
+            }
+
+            foreach (EmbeddedPackage.FolderSource folder in folders)
+                log.WriteLine($"Embarqué  : {folder.Name}/ — {Describe(folder.Path)}");
+
+            byte[] final = EmbeddedPackage.Append(personalized, configuration, folders);
             File.WriteAllBytes(temporary, final);
+
+            log.WriteLine($"Archive   : {final.Length - personalized.Length:N0} octets");
 
             GenerationResult? failure = Verify(temporary, configuration, report);
             if (failure is not null)
@@ -148,7 +173,7 @@ public static class ExecutableGenerator
         byte[] bytes = File.ReadAllBytes(path);
         var info = PeInfo.Read(bytes, bytes.LongLength);
 
-        if (!info.IsSingleFileBundle || info.BundleHeaderOffset >= EmbeddedConfig.PayloadLength(bytes))
+        if (!info.IsSingleFileBundle || info.BundleHeaderOffset >= EmbeddedPackage.PayloadLength(bytes))
             return new GenerationResult(false, "Le bundle du fichier produit est incohérent.");
 
         try
@@ -165,11 +190,24 @@ public static class ExecutableGenerator
             return new GenerationResult(false, $"Le manifeste produit est illisible : {ex.Message}");
         }
 
-        AppConfiguration? relu = EmbeddedConfig.TryRead(path);
+        AppConfiguration? relu = EmbeddedPackage.ReadConfiguration(path);
 
         return relu?.Name == expected.Name
             ? null
             : new GenerationResult(false, "La configuration embarquée n'a pas pu être relue.");
+    }
+
+    /// <summary>Résumé lisible du contenu d'un dossier à embarquer.</summary>
+    private static string Describe(string path)
+    {
+        if (!Directory.Exists(path))
+            return "absent";
+
+        FileInfo[] files = new DirectoryInfo(path).GetFiles("*", SearchOption.AllDirectories);
+
+        return files.Length == 0
+            ? "vide"
+            : $"{files.Length} fichier(s), {files.Sum(f => f.Length):N0} octets";
     }
 
     private static VersionInfo.Fields BuildVersionFields(ConfigFile file, string targetName) => new()

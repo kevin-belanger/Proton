@@ -22,7 +22,7 @@ public sealed class DataApiTests : IAsyncLifetime
     {
         Directory.CreateDirectory(_root);
         ApplicationPaths paths = ApplicationPaths.ForRoot(_root);
-        Scaffolding.Ensure(paths);
+        Scaffolding.Ensure(paths, hasEmbeddedApp: false);
 
         _host = await LocalWebHost.StartAsync(paths);
         _client = new HttpClient { BaseAddress = _host.Address, Timeout = TimeSpan.FromSeconds(15) };

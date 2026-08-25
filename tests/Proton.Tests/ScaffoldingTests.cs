@@ -23,7 +23,7 @@ public sealed class ScaffoldingTests : IDisposable
     [Fact]
     public void Cree_app_et_data_lorsquils_sont_absents()
     {
-        Scaffolding.Result result = Scaffolding.Ensure(Paths);
+        Scaffolding.Result result = Scaffolding.Ensure(Paths, hasEmbeddedApp: false);
 
         Assert.True(Directory.Exists(Paths.App));
         Assert.True(Directory.Exists(Paths.Data));
@@ -34,7 +34,7 @@ public sealed class ScaffoldingTests : IDisposable
     [Fact]
     public void Ne_cree_jamais_le_dossier_config()
     {
-        Scaffolding.Ensure(Paths);
+        Scaffolding.Ensure(Paths, hasEmbeddedApp: false);
 
         // Le dossier `config` est un outil de personnalisation : un démarrage normal
         // ne doit pas le faire apparaître dans le dossier de l'utilisateur (§8).
@@ -44,7 +44,7 @@ public sealed class ScaffoldingTests : IDisposable
     [Fact]
     public void Engendre_une_page_daccueil_autonome()
     {
-        Scaffolding.Result result = Scaffolding.Ensure(Paths);
+        Scaffolding.Result result = Scaffolding.Ensure(Paths, hasEmbeddedApp: false);
 
         string page = File.ReadAllText(Path.Combine(Paths.App, "index.html"));
 
@@ -68,7 +68,7 @@ public sealed class ScaffoldingTests : IDisposable
         string index = Path.Combine(Paths.App, "index.html");
         File.WriteAllText(index, "<h1>Test Proton</h1>");
 
-        Scaffolding.Result result = Scaffolding.Ensure(Paths);
+        Scaffolding.Result result = Scaffolding.Ensure(Paths, hasEmbeddedApp: false);
 
         // « Proton ne doit jamais écraser automatiquement un fichier utilisateur
         // déjà existant » (§8).
@@ -81,7 +81,7 @@ public sealed class ScaffoldingTests : IDisposable
     {
         Directory.CreateDirectory(Paths.App);
 
-        Scaffolding.Result result = Scaffolding.Ensure(Paths);
+        Scaffolding.Result result = Scaffolding.Ensure(Paths, hasEmbeddedApp: false);
 
         Assert.False(result.CreatedApp);
         Assert.True(result.CreatedIndex);
@@ -90,8 +90,8 @@ public sealed class ScaffoldingTests : IDisposable
     [Fact]
     public void Est_idempotent()
     {
-        Scaffolding.Ensure(Paths);
-        Scaffolding.Result second = Scaffolding.Ensure(Paths);
+        Scaffolding.Ensure(Paths, hasEmbeddedApp: false);
+        Scaffolding.Result second = Scaffolding.Ensure(Paths, hasEmbeddedApp: false);
 
         Assert.False(second.CreatedApp);
         Assert.False(second.CreatedData);

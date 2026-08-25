@@ -17,7 +17,7 @@ public sealed class LocalWebHostTests : IDisposable
     public LocalWebHostTests()
     {
         Directory.CreateDirectory(_root);
-        Scaffolding.Ensure(ApplicationPaths.ForRoot(_root));
+        Scaffolding.Ensure(ApplicationPaths.ForRoot(_root), hasEmbeddedApp: false);
     }
 
     public void Dispose()

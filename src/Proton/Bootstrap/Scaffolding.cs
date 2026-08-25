@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Text;
 
 namespace Proton.Bootstrap;
@@ -11,30 +12,120 @@ namespace Proton.Bootstrap;
 public static class Scaffolding
 {
     /// <summary>Rapport de ce qui a réellement été créé, à des fins de diagnostic.</summary>
-    public sealed record Result(bool CreatedApp, bool CreatedData, bool CreatedDb, bool CreatedIndex);
+    public sealed record Result(
+        bool CreatedApp, bool CreatedData, bool CreatedDb, bool CreatedIndex, bool ExtractedFolders);
 
     /// <summary>
-    /// Vérifie l'existence de <c>app</c>, <c>data</c> et <c>db</c>, et les crée au
-    /// besoin. Le dossier <c>config</c> n'est jamais créé lors d'un démarrage normal (§8).
+    /// Prépare les dossiers de l'application (§8, §39.1).
+    ///
+    /// Deux situations, selon que l'exécutable porte une application embarquée.
+    ///
+    /// <b>Exécutable personnalisé.</b> Son application est servie depuis l'archive :
+    /// aucun dossier <c>app</c> n'est créé. Seuls <c>data</c> et <c>db</c> le sont, et
+    /// l'archive y dépose son contenu initial si elle en porte — mais uniquement
+    /// lorsque <b>aucun des deux</b> n'existe déjà. Une extraction partielle
+    /// mélangerait des données livrées et des données de l'utilisateur, ce qui ne se
+    /// diagnostique plus.
+    ///
+    /// <b>Moteur générique.</b> Sans archive, <c>app</c> est créé sur le disque avec
+    /// une page d'accueil : c'est le point de départ du développeur (§8).
     /// </summary>
-    public static Result Ensure(ApplicationPaths paths)
+    public static Result Ensure(ApplicationPaths paths, bool hasEmbeddedApp)
     {
-        bool createdApp = CreateDirectoryIfMissing(paths.App);
+        bool createdApp = false;
+        bool createdIndex = false;
+
+        if (!hasEmbeddedApp)
+        {
+            createdApp = CreateDirectoryIfMissing(paths.App);
+
+            // L'index n'est engendré que si le dossier ne contient aucune page
+            // d'accueil — y compris lorsqu'il existait déjà, mais vide.
+            string index = Path.Combine(paths.App, "index.html");
+
+            if (!File.Exists(index))
+            {
+                File.WriteAllText(index, WelcomePage, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                createdIndex = true;
+            }
+        }
+
+        bool extracted = TryExtractUserFolders(paths);
+
         bool createdData = CreateDirectoryIfMissing(paths.Data);
         bool createdDb = CreateDirectoryIfMissing(paths.Db);
 
-        // L'index n'est engendré que si le dossier `app` ne contient aucune page
-        // d'accueil — y compris lorsque le dossier existait déjà, mais vide.
-        bool createdIndex = false;
-        string index = Path.Combine(paths.App, "index.html");
+        return new Result(createdApp, createdData, createdDb, createdIndex, extracted);
+    }
 
-        if (!File.Exists(index))
+    /// <summary>
+    /// Dépose le contenu initial de <c>data</c> et <c>db</c>, si l'archive en porte.
+    /// </summary>
+    /// <remarks>
+    /// Tout ou rien : dès qu'un seul des deux dossiers existe, rien n'est extrait. Ce
+    /// que l'utilisateur a commencé lui appartient, et un mélange avec des données
+    /// livrées produirait des situations inexplicables.
+    /// </remarks>
+    private static bool TryExtractUserFolders(ApplicationPaths paths)
+    {
+        if (Directory.Exists(paths.Data) || Directory.Exists(paths.Db))
+            return false;
+
+        string? executable = Environment.ProcessPath;
+        if (string.IsNullOrEmpty(executable))
+            return false;
+
+        try
         {
-            File.WriteAllText(index, WelcomePage, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
-            createdIndex = true;
-        }
+            using var archive = Personalization.EmbeddedPackage.TryOpen(executable);
+            if (archive is null)
+                return false;
 
-        return new Result(createdApp, createdData, createdDb, createdIndex);
+            bool extracted = false;
+
+            foreach (var entry in archive.Entries)
+            {
+                string? destination = ResolveDestination(paths, entry.FullName);
+
+                if (destination is null || entry.FullName.EndsWith('/'))
+                    continue;
+
+                Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+                entry.ExtractToFile(destination, overwrite: false);
+                extracted = true;
+            }
+
+            return extracted;
+        }
+        catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException)
+        {
+            Infrastructure.DiagnosticLog.Error("Le contenu initial n'a pas pu être extrait.", ex);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Traduit une entrée d'archive en chemin sur le disque, ou null si elle ne
+    /// concerne pas les dossiers de l'utilisateur.
+    /// </summary>
+    private static string? ResolveDestination(ApplicationPaths paths, string entryName)
+    {
+        string name = entryName.Replace('\\', '/');
+
+        // Une entrée ne doit jamais désigner autre chose que data ou db : le contenu
+        // de l'archive provient d'une machine de développement, pas d'une source sûre.
+        if (name.Contains("../", StringComparison.Ordinal))
+            return null;
+
+        string prefix = Personalization.EmbeddedPackage.DataFolder + "/";
+        if (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return Path.Combine(paths.Data, name[prefix.Length..].Replace('/', Path.DirectorySeparatorChar));
+
+        prefix = Personalization.EmbeddedPackage.DbFolder + "/";
+        if (name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            return Path.Combine(paths.Db, name[prefix.Length..].Replace('/', Path.DirectorySeparatorChar));
+
+        return null;
     }
 
     private static bool CreateDirectoryIfMissing(string path)

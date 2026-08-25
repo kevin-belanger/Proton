@@ -23,7 +23,7 @@ internal static class Program
         ApplicationConfiguration.Initialize();
         InstallGlobalHandlers();
 
-        return IsConfigMode(args) ? RunGenerator() : RunApplication();
+        return IsConfigMode(args) ? RunGenerator(args) : RunApplication();
     }
 
     /// <summary>
@@ -62,13 +62,17 @@ internal static class Program
 
     // --- Mode de personnalisation (§35) -------------------------------------------
 
-    private static int RunGenerator()
+    private static int RunGenerator(string[] args)
     {
         bool console = ConsoleAttachment.TryAttach();
         var log = new StringWriter();
 
+        // « data » demande d'embarquer aussi le contenu initial de data et db (§39.1).
+        bool embedUserFolders = args.Skip(1)
+            .Any(a => a.TrimStart('/', '-').Equals("data", StringComparison.OrdinalIgnoreCase));
+
         GenerationResult result = ExecutableGenerator.Run(
-            Environment.ProcessPath!, Directory.GetCurrentDirectory(), log);
+            Environment.ProcessPath!, Directory.GetCurrentDirectory(), log, embedUserFolders);
 
         string report = log.ToString() + Environment.NewLine + result.Message;
 
@@ -94,7 +98,13 @@ internal static class Program
         try
         {
             ApplicationPaths paths = ApplicationPaths.ForCurrentProcess();
-            Scaffolding.Ensure(paths);
+
+            // Un exécutable personnalisé sert son application depuis son archive : il
+            // ne faut alors créer aucun dossier `app` (§39.1).
+            bool embedded = ArchiveFileProvider.TryLoad(
+                Environment.ProcessPath ?? string.Empty, EmbeddedPackage.AppFolder) is not null;
+
+            Scaffolding.Ensure(paths, embedded);
 
             AppConfiguration configuration = AppConfiguration.Load();
             LocalWebHost host = LocalWebHost.StartAsync(paths).GetAwaiter().GetResult();

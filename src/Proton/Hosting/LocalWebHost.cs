@@ -9,6 +9,7 @@ using Proton.AppApi;
 using Proton.Bootstrap;
 using Proton.Configuration;
 using Proton.Infrastructure;
+using Proton.Personalization;
 using Proton.FileApi;
 using Proton.SqliteApi;
 
@@ -180,7 +181,11 @@ public sealed class LocalWebHost : IAsyncDisposable
     /// </summary>
     private static void MapStaticApplicationFiles(WebApplication application, ApplicationPaths paths)
     {
-        var files = new PhysicalFileProvider(paths.App);
+        // L'application embarquée prime : elle voyage avec le moteur et ne peut donc
+        // pas s'en désynchroniser (§39.1). Le dossier `app` du disque ne sert que le
+        // moteur générique, pendant le développement.
+        IFileProvider files = (IFileProvider?)ArchiveFileProvider.TryLoad(Environment.ProcessPath ?? string.Empty, EmbeddedPackage.AppFolder)
+            ?? new PhysicalFileProvider(paths.App);
 
         application.UseDefaultFiles(new DefaultFilesOptions
         {

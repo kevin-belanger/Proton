@@ -10,11 +10,17 @@ donne accès à des capacités hors de portée d'une page Web ordinaire : lectur
 Une application Proton se distribue par simple copie :
 
 ```text
+MonApplication.exe      ← un seul fichier
+```
+
+L'application Web est embarquée dans l'exécutable. Au premier démarrage, celui-ci crée
+à côté de lui les dossiers dont il a besoin :
+
+```text
 MonApplication/
 ├── MonApplication.exe
-├── app/          l'application Web
-├── data/         ses fichiers
-└── db/           ses bases SQLite
+├── data/    ses fichiers
+└── db/      ses bases SQLite
 ```
 
 Ni installateur, ni serveur, ni runtime à installer séparément.
@@ -88,12 +94,20 @@ puis lancez :
 Proton.exe /config
 ```
 
-Vous obtenez `GestionInventaire.exe` : même moteur, avec son nom, son icône et ses
-métadonnées Windows. `Proton.exe` reste intact, et le dossier `config` peut être
-supprimé — l'exécutable généré porte sa configuration en lui.
+Vous obtenez `GestionInventaire.exe` : même moteur, avec son nom, son icône, ses
+métadonnées Windows **et votre application embarquée**. `Proton.exe` reste intact.
 
-Distribuez alors `GestionInventaire.exe` + `app/`. Rien d'autre : `data` et `db` se
-créent au premier démarrage.
+Distribuez ce fichier, et rien d'autre. `data` et `db` se créent au premier démarrage.
+
+Pour livrer un contenu initial — modèles, catalogue, base pré-remplie — ajoutez le
+paramètre `data` :
+
+```bash
+Proton.exe /config data
+```
+
+Il embarque aussi `data/` et `db/`, déposés au premier démarrage si aucun des deux
+n'existe encore.
 
 ---
 
