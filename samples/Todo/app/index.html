@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Proton Todo</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<main>
+    <header>
+        <h1 id="title">Proton Todo</h1>
+        <p class="subtitle">Tasks live in SQLite. Attachments are real files on disk.</p>
+    </header>
+
+    <form id="new-task">
+        <input type="text" id="note" placeholder="What needs to be done?" autocomplete="off">
+        <button type="submit">Add task</button>
+    </form>
+
+    <nav id="filters">
+        <button data-filter="all" class="selected">All <span class="count"></span></button>
+        <button data-filter="active">Active <span class="count"></span></button>
+        <button data-filter="done">Completed <span class="count"></span></button>
+    </nav>
+
+    <ul id="tasks"></ul>
+
+    <p id="empty" hidden>Nothing here yet.</p>
+</main>
+
+<!-- One task. The script clones this and fills it in. -->
+<template id="task-template">
+    <li class="task">
+        <button class="check" title="Toggle"></button>
+
+        <div class="body">
+            <p class="note"></p>
+            <p class="date"></p>
+            <div class="attachments"></div>
+        </div>
+
+        <div class="actions">
+            <label class="icon attach" title="Attach files">
+                <input type="file" multiple hidden>
+            </label>
+            <button class="icon remove" title="Delete task"></button>
+        </div>
+    </li>
+</template>
+
+<!-- One attachment chip. -->
+<template id="attachment-template">
+    <span class="chip">
+        <a target="_blank"></a>
+        <span class="size"></span>
+        <button class="detach" title="Remove"></button>
+    </span>
+</template>
+
+<script src="js/proton.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

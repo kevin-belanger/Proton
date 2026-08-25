@@ -72,7 +72,9 @@ await fetch('/api/sqlite/app.db/execute', {
 });
 ```
 
-`samples/Todo` est une application complète qui exerce toutes ces capacités.
+**`samples/Todo`** est une application complète qui exerce toutes ces capacités.
+Copiez ses dossiers `app` et `config` à côté de `Proton.exe`, lancez-le, puis
+`Proton.exe /config` pour en faire un programme à part entière.
 
 ### Personnaliser l'exécutable
 

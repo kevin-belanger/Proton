@@ -1,166 +1,88 @@
-# Exemple — Tâches
+# Proton Todo
 
-Une liste de tâches avec pièces jointes. Elle existe pour exercer **toutes** les
-capacités de Proton V1 dans une application réaliste :
+A task list with file attachments. Small enough to read in one sitting, complete
+enough to exercise everything Proton offers.
 
-| Capacité | Usage dans l'exemple |
-| --- | --- |
-| `/api/app` (§24.1) | Titre et version affichés depuis la configuration embarquée |
-| `/api/sqlite` (§27) | Les tâches — création du schéma, insertion, lecture, mise à jour, suppression |
-| `/files` écriture (§17) | Téléversement d'une pièce jointe, corps de requête brut |
-| `/files` lecture (§15) | Ouverture d'une pièce jointe |
-| `/files` listing (§21) | Les pièces jointes sont **déduites** du contenu du dossier |
-| `/files` suppression (§20) | Retrait d'une pièce jointe, et nettoyage à la suppression d'une tâche |
-
-Les tâches vivent dans `data/db/todo.db`, les pièces jointes dans `data/files/attachments/` :
-une base n'est jamais un fichier ordinaire (§26).
-
-## Essayer
-
-Copier le contenu de ce dossier dans le `app\` d'une application Proton :
-
-```bash
-xcopy /E /I /Y samples\Todo C:\proton\test\app
+```text
+samples/Todo/
+├── app/                the application itself
+│   ├── index.html      markup and two <template> elements
+│   ├── css/style.css   all of the visual work
+│   └── js/
+│       ├── proton.js   a thin wrapper over the Proton APIs
+│       └── app.js      the application logic
+└── config/             turns it into a standalone executable
+    ├── config.json
+    └── icon.ico
 ```
 
-Elle a été écrite **avant** les API qu'elle consomme, pour définir leur contrat par
-l'usage plutôt que dans l'abstrait. Elles existent désormais, et l'application
-fonctionne sans avoir été retouchée.
+## Try it
 
-## Choix de conception
+Copy `app` and `config` next to `Proton.exe`, then run it. The application starts
+straight away.
 
-**Les pièces jointes ne sont pas enregistrées en base.** Elles vivent dans
-`data/files/attachments/{id}/` et sont déduites du listing du dossier, qui fournit déjà
-nom, taille et date (§21). Tenir une table en plus créerait deux états susceptibles
-de diverger — un fichier supprimé à la main laisserait une ligne fantôme.
+To turn it into a program of its own:
 
-**Aucun SDK n'est requis** (§53). `js/proton.js` n'est qu'une commodité d'une
-centaine de lignes ; tout y passe par `fetch` et des URL relatives. Il donne une
-idée de ce que serait une bibliothèque officielle si elle voyait le jour.
+```bash
+Proton.exe /config
+```
 
----
+You get **`ProtonTodo.exe`** — your application, its icon and its name, in a single
+file. Copy it anywhere and run it; it creates what it needs on first start.
 
-# Ce que cet exercice a révélé
+## What it does
 
-Écrire cette application avant les API a mis au jour sept questions que la
-spécification ne tranchait pas. Toutes sont désormais réglées, et chacune a laissé
-une trace dans l'analyse.
+- add, complete and delete tasks
+- attach files by button, or by dropping them onto a card
+- open an attachment — it downloads and opens in the associated program
+- remove an attachment
+- filter by all, active or completed, with live counts
 
-## 1. Ouvrir une pièce jointe remplacerait l'application — **tranché**
+## How it is built
 
-Le cas le plus sérieux. Un lien vers `/files/rapport.pdf` pointe vers l'origine
-locale ; or §51 posait que les URL de l'origine locale **restent dans la WebView**.
-Cliquer sur une pièce jointe aurait donc remplacé l'application par le visualiseur
-PDF intégré, sans retour possible — il n'y a ni bouton Précédent ni barre d'adresse
-(§11).
+**The markup lives in `index.html`, not in the JavaScript.** Two `<template>`
+elements hold a task card and an attachment chip; the script clones one and fills it
+in. That keeps `app.js` down to what the application actually *does*.
 
-**Décision (§51.1) :** la fenêtre annule toute navigation de premier niveau vers
-`/files` ou `/api` et confie la ressource au système.
+**Everything visual is in `style.css`,** including the icons — the tick, the
+paperclip, the wastebasket and the cross are drawn with borders and pseudo-elements
+rather than loaded as images. Nothing is fetched from the network.
 
-Le filtrage porte sur la **nature de la requête**, non sur le type du fichier :
-aucune liste d'extensions à tenir à jour, et `<img>`, `<iframe>`, `<video>` et
-`fetch` continuent de fonctionner sans exception, n'étant pas des navigations.
+**Attachments are not recorded in the database.** They live in
+`data/files/attachments/{id}/` and are read back from the folder listing, which
+already reports name, size and date. Two sources of truth would eventually disagree —
+a file deleted by hand would leave a phantom row.
 
-Écarté : imposer `Content-Disposition: attachment` sur tout `/files`. Cela aurait
-réglé le problème en interdisant au passage l'affichage d'un document dans un cadre.
-Le paramètre facultatif `?download=1` (§15.1) reste disponible pour l'application qui
-veut explicitement un téléchargement.
+**Almost no validation.** This is sample code: it assumes the APIs answer, because
+they do. The one guard that earns its place strips the characters Windows rejects in
+file names.
 
-## 2. Supprimer une tâche coûtait N+2 requêtes — **tranché**
+## Points worth noticing
 
-Retirer une tâche portant cinq pièces jointes demandait un listing, cinq
-suppressions, puis la suppression du dossier : sept allers-retours pour une opération
-banale, dont aucun n'était atomique. Une interruption au milieu laissait des fichiers
-orphelins.
+**Deleting a task removes its files first, then the row.** The other order would
+leave attachments that nothing points to any more — invisible, and impossible to
+clean up. When an operation spans the database and the disk, choose the order that
+makes an interruption recoverable.
 
-**Décision (§22.3) :** la suppression récursive d'un dossier existe, sur demande
-explicite. `supprimerTache` tient désormais en une seule requête.
+**The folder listing is fetched once per render,** not once per task. Asking which
+attachment folders exist before asking what is inside them means never requesting a
+folder that isn't there — and no stray 404s in the console.
 
-La récursion reste **opt-in** : sans le paramètre, un dossier non vide est refusé par
-`409`. La destruction d'un contenu ne peut jamais résulter d'un oubli.
+**The title comes from the executable.** `GET /api/app` returns the name embedded by
+`/config`, so the packaged application calls itself *Proton Todo* while the plain
+engine keeps the title written in the HTML.
 
-Écarté : la suppression de plusieurs fichiers en une requête (§22.5). Sur un serveur
-local, une requête par fichier ne coûte rien, et une opération groupée soulèverait
-des questions de résultat partiel qui ne se posent pas ici.
+## The APIs it uses
 
-## 3. Que répond le listing d'un dossier inexistant ? — **tranché**
-
-Une tâche sans pièce jointe n'a pas de dossier. `GET /files/attachments/7/` doit-il
-retourner `404`, ou une liste vide ?
-
-**Décision (§21) : `404`.** Un dossier absent et un dossier vide sont deux états
-différents, et l'API ne les confond pas. C'est ce que l'exemple supposait déjà : il
-traite ce `404` comme « aucune pièce jointe ».
-
-§22.1 avait réglé la question voisine : la barre oblique finale distingue un fichier
-d'un dossier sur toutes les méthodes.
-
-## 4. Rien n’indique qu’un fichier a été remplacé — **tranché**
-
-§19 distingue `201` (créé) de `204` (remplacé) : l'information existe donc, mais
-elle se perd si la couche d'accès ne la remonte pas. Téléverser deux fois le même
-nom écrase silencieusement le premier fichier.
-
-**Décision : rien à ajouter à l'API.** §19 distingue déjà `201 Created` de
-`204 No Content` : après un `PUT`, l'application sait si elle a créé ou remplacé.
-
-Ce qui manquait était dans la couche d'accès, qui avalait ce code de retour.
-`Proton.fichiers.ecrire` retourne désormais `{ cree }`, et l'exemple avertit quand
-une pièce jointe en a écrasé une autre.
-
-Écarté : un moyen de refuser l'écrasement, tel que `If-None-Match: *`. Ce serait
-réintroduire une précondition par la petite porte, la complexité même écartée en §16.
-Rien n'empêchera de l'ajouter le jour où le besoin se manifestera.
-
-## 5. Aucune transaction ne couvre fichiers et base — **tranché**
-
-Supprimer une tâche touche deux mondes : des lignes SQLite et des fichiers. §32 ne
-garantit l'atomicité qu'à l'intérieur d'une base. Une panne entre les deux laisse
-un état incohérent.
-
-**Décision (§59.1) : la limite est assumée, avec une règle d'ordonnancement.**
-
-Proton ne fournira aucune garantie transversale — une transaction distribuée entre
-SQLite et le système de fichiers serait hors de proportion. En revanche, l'ordre des
-opérations décide de quel côté l'échec retombe :
-
-| Ordre | En cas d'interruption |
+| Call | What for |
 | --- | --- |
-| Ligne d'abord, puis fichiers | Fichiers orphelins **invisibles** |
-| Fichiers d'abord, puis ligne | La fiche subsiste, réparable |
+| `GET /api/app` | the application's own name and version |
+| `POST /api/sqlite/todo.db/query` | reading tasks |
+| `POST /api/sqlite/todo.db/execute` | creating the table, adding, updating, deleting |
+| `GET /files/attachments/{id}/` | listing attachments |
+| `PUT /files/attachments/{id}/{name}` | uploading a file |
+| `DELETE /files/attachments/{id}/{name}` | removing one |
+| `DELETE /files/attachments/{id}/?recursive=1` | removing a task's folder in one call |
 
-`supprimerTache` applique déjà cette règle : le dossier de pièces jointes part avant
-la ligne en base.
-
-## 6. Noms de fichiers — **tranché**
-
-L'exemple assainit les noms côté client, mais rien n'empêchait une autre application
-d'envoyer `PUT /files/CON`.
-
-**Décision (§17.1) : aucune liste de noms interdits.** Proton tente l'écriture ; si
-elle échoue, il retourne `write_failed`. Disque plein, fichier verrouillé, nom refusé
-par Windows relèvent du même traitement.
-
-La mesure a montré que le risque était surestimé : sur Windows 11, `CON`, `AUX`,
-`PRN` et `COM1` sont créés comme des fichiers ordinaires. Seul `NUL` échoue — et un
-échec est exactement ce que §17.1 sait traiter.
-
-Un cas résiduel est documenté plutôt que codé (§17.2) : un nom terminé par un point
-ou une espace est normalisé par Windows. Il ne provoque ni erreur ni perte d'accès,
-mais le nom retourné par le listing fait foi.
-
-
-## 7. Taille des requêtes — **tranché**
-
-Joindre une vidéo dépasserait la limite par défaut de Kestrel et produirait une
-erreur brute, hors du format uniforme de §24.
-
-**Décision (§58.1) : la limite est levée sur `/files`, maintenue sur `/api`.**
-
-| Espace | Limite | Raison |
-| --- | --- | --- |
-| `/files` | aucune | Le contenu transite par flux vers le disque |
-| `/api` | 32 Mo | Un corps JSON est désérialisé en mémoire |
-
-Joindre une vidéo devient donc possible. Le disque plein reste la borne naturelle, et
-§17.1 traite cet échec comme les autres.
+No library is required for any of this — `js/proton.js` is eighty lines of
+convenience over `fetch`, and you are free to ignore it.

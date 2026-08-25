@@ -1,0 +1,407 @@
+/* Proton Todo — all of the visual work happens here, so that the HTML and the
+   JavaScript can stay short. */
+
+:root {
+    color-scheme: light dark;
+
+    --page: #f6f7f9;
+    --card: #ffffff;
+    --card-hover: #ffffff;
+    --text: #14161a;
+    --muted: #6b7280;
+    --faint: #9aa1ab;
+    --line: #e3e6ea;
+    --accent: #4f46e5;
+    --accent-soft: #eef2ff;
+    --accent-text: #ffffff;
+    --danger: #dc2626;
+    --shadow: 0 1px 2px rgba(20, 22, 26, .06), 0 4px 12px rgba(20, 22, 26, .04);
+    --shadow-lift: 0 1px 2px rgba(20, 22, 26, .08), 0 8px 24px rgba(20, 22, 26, .08);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --page: #16181d;
+        --card: #1e2128;
+        --card-hover: #232730;
+        --text: #f2f4f7;
+        --muted: #99a1ad;
+        --faint: #6b7280;
+        --line: #2c313a;
+        --accent: #818cf8;
+        --accent-soft: #262a42;
+        --accent-text: #14161a;
+        --danger: #f87171;
+        --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 12px rgba(0, 0, 0, .2);
+        --shadow-lift: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+    }
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 3.5rem 1.5rem 5rem;
+    background: var(--page);
+    color: var(--text);
+    font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    display: flex;
+    justify-content: center;
+}
+
+main { width: 100%; max-width: 36rem; }
+
+/* --- Header ------------------------------------------------------------- */
+
+header { margin-bottom: 2rem; }
+
+h1 {
+    margin: 0;
+    font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
+    font-size: 2rem;
+    font-weight: 650;
+    letter-spacing: -.025em;
+}
+
+.subtitle {
+    margin: .35rem 0 0;
+    color: var(--muted);
+    font-size: .9rem;
+}
+
+/* --- New task ----------------------------------------------------------- */
+
+#new-task {
+    display: flex;
+    gap: .5rem;
+    margin-bottom: 1.25rem;
+}
+
+#note {
+    flex: 1;
+    padding: .7rem .9rem;
+    background: var(--card);
+    color: inherit;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    font: inherit;
+    transition: border-color .15s, box-shadow .15s;
+}
+
+#note::placeholder { color: var(--faint); }
+
+#note:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: var(--shadow), 0 0 0 3px var(--accent-soft);
+}
+
+#new-task button {
+    padding: .7rem 1.1rem;
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    font: inherit;
+    font-weight: 550;
+    cursor: pointer;
+    transition: filter .15s, transform .05s;
+}
+
+#new-task button:hover { filter: brightness(1.08); }
+#new-task button:active { transform: translateY(1px); }
+
+/* --- Filters ------------------------------------------------------------ */
+
+#filters {
+    display: flex;
+    gap: .25rem;
+    margin-bottom: 1rem;
+    padding: .25rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    width: fit-content;
+}
+
+#filters button {
+    padding: .4rem .8rem;
+    background: none;
+    border: none;
+    border-radius: 7px;
+    color: var(--muted);
+    font: inherit;
+    font-size: .875rem;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+}
+
+#filters button:hover { color: var(--text); }
+
+#filters button.selected {
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-weight: 550;
+}
+
+.count {
+    display: inline-block;
+    min-width: 1.2em;
+    margin-left: .15rem;
+    color: var(--faint);
+    font-size: .8rem;
+    font-variant-numeric: tabular-nums;
+}
+
+#filters button.selected .count { color: inherit; opacity: .7; }
+
+/* --- Task list ---------------------------------------------------------- */
+
+#tasks {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+}
+
+.task {
+    display: flex;
+    align-items: flex-start;
+    gap: .85rem;
+    padding: .9rem 1rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    transition: box-shadow .18s, border-color .18s, background .18s;
+}
+
+.task:hover {
+    background: var(--card-hover);
+    box-shadow: var(--shadow-lift);
+}
+
+/* A file being dragged over the card. */
+.task.dropping {
+    border-color: var(--accent);
+    box-shadow: var(--shadow), 0 0 0 3px var(--accent-soft);
+}
+
+/* --- Checkbox ----------------------------------------------------------- */
+
+.check {
+    flex: none;
+    width: 1.3rem;
+    height: 1.3rem;
+    margin-top: .1rem;
+    padding: 0;
+    background: none;
+    border: 1.5px solid var(--line);
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    transition: border-color .15s, background .15s;
+}
+
+.check:hover { border-color: var(--accent); }
+
+.done .check {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* The tick, drawn with two borders rotated into an L shape. */
+.done .check::after {
+    content: "";
+    position: absolute;
+    left: .4rem;
+    top: .18rem;
+    width: .3rem;
+    height: .55rem;
+    border: solid var(--accent-text);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* --- Task body ---------------------------------------------------------- */
+
+.body { flex: 1; min-width: 0; }
+
+.note {
+    margin: 0;
+    overflow-wrap: anywhere;
+    transition: color .18s;
+}
+
+.done .note {
+    color: var(--faint);
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+}
+
+.date {
+    margin: .15rem 0 0;
+    color: var(--faint);
+    font-size: .78rem;
+}
+
+/* --- Attachments -------------------------------------------------------- */
+
+.attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
+    margin-top: .6rem;
+}
+
+.attachments:empty { display: none; }
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    max-width: 100%;
+    padding: .2rem .3rem .2rem .55rem;
+    background: var(--page);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-size: .78rem;
+}
+
+.chip a {
+    color: var(--text);
+    text-decoration: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chip a:hover { color: var(--accent); }
+.chip .size { color: var(--faint); flex: none; }
+
+.detach {
+    flex: none;
+    width: 1.05rem;
+    height: 1.05rem;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    color: var(--faint);
+    cursor: pointer;
+    position: relative;
+    transition: background .15s, color .15s;
+}
+
+.detach:hover { background: var(--line); color: var(--danger); }
+
+/* The cross, drawn with two rotated bars. */
+.detach::before,
+.detach::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: .55rem;
+    height: 1.2px;
+    background: currentColor;
+}
+
+.detach::before { transform: translate(-50%, -50%) rotate(45deg); }
+.detach::after  { transform: translate(-50%, -50%) rotate(-45deg); }
+
+/* --- Actions ------------------------------------------------------------ */
+
+.actions {
+    display: flex;
+    gap: .15rem;
+    flex: none;
+    opacity: 0;
+    transition: opacity .18s;
+}
+
+.task:hover .actions,
+.actions:focus-within { opacity: 1; }
+
+.icon {
+    width: 1.9rem;
+    height: 1.9rem;
+    padding: 0;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    color: var(--muted);
+    cursor: pointer;
+    position: relative;
+    transition: background .15s, color .15s;
+}
+
+.icon:hover { background: var(--page); color: var(--text); }
+.remove:hover { color: var(--danger); }
+
+/* A paperclip, suggested with a rounded rectangle open at the bottom. */
+.attach::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: .55rem;
+    height: .95rem;
+    border: 1.5px solid currentColor;
+    border-radius: 999px;
+    border-bottom-color: transparent;
+    transform: translate(-50%, -50%) rotate(35deg);
+}
+
+/* A wastebasket: a lid and a body. */
+.remove::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: .7rem;
+    height: .1rem;
+    background: currentColor;
+    transform: translate(-50%, -.34rem);
+}
+
+.remove::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: .55rem;
+    height: .62rem;
+    border: 1.5px solid currentColor;
+    border-top: none;
+    border-radius: 0 0 3px 3px;
+    transform: translate(-50%, -.22rem);
+}
+
+/* --- Empty state -------------------------------------------------------- */
+
+#empty {
+    margin: 3rem 0;
+    text-align: center;
+    color: var(--faint);
+}
+
+/* --- Unavailable services ----------------------------------------------- */
+
+.warning {
+    padding: 1.1rem 1.25rem;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+}
+
+.warning p { margin: .4rem 0 0; color: var(--muted); font-size: .9rem; }

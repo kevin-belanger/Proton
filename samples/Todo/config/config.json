@@ -1,0 +1,6 @@
+{
+  "name": "Proton Todo",
+  "executableName": "ProtonTodo",
+  "version": "1.0.0",
+  "window": { "width": 720, "height": 800, "resizable": true }
+}
