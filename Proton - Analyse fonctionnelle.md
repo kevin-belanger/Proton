@@ -1720,7 +1720,7 @@ générateur :
   son propre écran « À propos ».
 
 ```text
-Comments : Built with Proton 1.0.0 — Copyright (c) 2026 Kevin Belanger (MIT License)
+Comments : Built with Proton 1.1.0 — Copyright (c) 2026 Kevin Belanger (MIT License)
 ```
 
 Le développeur n'a rien à faire : les champs qui lui appartiennent — nom, éditeur,

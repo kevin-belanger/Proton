@@ -29,7 +29,7 @@ public sealed record AppConfiguration
     public static string EngineName => "Proton";
 
     public static string EngineVersion =>
-        typeof(AppConfiguration).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
+        typeof(AppConfiguration).Assembly.GetName().Version?.ToString(3) ?? "1.1.0";
 
     /// <summary>
     /// Licence du moteur.

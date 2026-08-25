@@ -22,7 +22,7 @@
     <Product>Proton</Product>
     <AssemblyTitle>Proton</AssemblyTitle>
     <Description>Moteur d'applications de bureau HTML/CSS/JavaScript</Description>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <!-- Publication : self-contained, un seul fichier, bundle compressé.
