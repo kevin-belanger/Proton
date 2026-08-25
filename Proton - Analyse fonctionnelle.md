@@ -2401,9 +2401,15 @@ dit de lui-même est en **français**.
 | --- | --- | --- |
 | Ce document, `docs/*.md`, `prototypes/` | qui construit Proton | français |
 | Commentaires du code | qui le modifie | français |
-| `docs/index.html` et `samples/` | qui **utilise** Proton | anglais |
+| `README.md`, `docs/index.html`, `samples/` | qui **utilise** Proton | anglais |
 | Sortie de `/config`, boîtes de dialogue, messages d'erreur des API | l'utilisateur | anglais |
 | Journal de diagnostic | l'utilisateur, que la documentation y envoie | anglais |
+
+`README.md` est la page d'accueil du dépôt sur GitHub : c'est le premier texte que
+rencontre qui découvre le projet, avant même la documentation. Il appartient donc au
+public le plus large, et non aux seuls contributeurs. Il indique en revanche la langue
+de chaque document vers lequel il renvoie, pour qu'un lecteur anglophone sache ce qu'il
+trouvera en ouvrant l'analyse.
 
 La frontière passe au niveau de la chaîne de caractères, pas du fichier : un même
 fichier source porte des commentaires français et des messages anglais. Le critère est

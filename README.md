@@ -1,65 +1,64 @@
 # Proton
 
-**Documentation : [kevin-belanger.github.io/Proton](https://kevin-belanger.github.io/Proton/)**
+**Documentation: [kevin-belanger.github.io/Proton](https://kevin-belanger.github.io/Proton/)**
 
-Moteur Windows autonome permettant d'exécuter une application HTML / CSS / JavaScript
-comme une application de bureau.
+A self-contained Windows engine that runs an HTML / CSS / JavaScript application as a
+desktop application.
 
-Proton démarre un serveur local, sert l'application depuis un dossier `app`, et lui
-donne accès à des capacités hors de portée d'une page Web ordinaire : lecture et
-écriture de fichiers, bases SQLite locales.
+Proton starts a local server, serves the application from an `app` folder, and gives it
+capabilities beyond the reach of an ordinary web page: reading and writing files, and
+local SQLite databases.
 
-Une application Proton se distribue par simple copie :
+A Proton application is distributed by copying a single file:
 
 ```text
-MonApplication.exe      ← un seul fichier
+MyApplication.exe      ← one file
 ```
 
-L'application Web est embarquée dans l'exécutable. Au premier démarrage, celui-ci crée
-à côté de lui les dossiers dont il a besoin :
+The web application is embedded in the executable. On first start it creates the
+folders it needs beside itself:
 
 ```text
-MonApplication/
-├── MonApplication.exe
+MyApplication/
+├── MyApplication.exe
 └── data/
-    ├── files/    ses fichiers
-    └── db/       ses bases SQLite
+    ├── files/    its files
+    └── db/       its SQLite databases
 ```
 
-Ni installateur, ni serveur, ni runtime à installer séparément.
+No installer, no server, no runtime to install separately.
 
 ---
 
-## Démarrer
+## Getting started
 
-Téléchargez `Proton.exe`, placez-le dans un dossier vide et lancez-le. Il y crée
-`app` et `data`, puis affiche une page d'accueil.
+Download `Proton.exe`, put it in an empty folder and run it. It creates `app` and
+`data` there, then shows a starter page.
 
-Remplacez ensuite le contenu de `app` par le vôtre. Vos pages sont servies à la
-racine :
+Then replace the contents of `app` with your own. Your pages are served from the root:
 
 ```text
 app/index.html      →  /
 app/css/style.css   →  /css/style.css
 ```
 
-L'application n'a jamais à connaître son emplacement sur le disque, ni le port
-retenu : les URL relatives suffisent.
+The application never has to know where it sits on disk, nor which port was chosen:
+relative URLs are enough.
 
-### Les API
+### The APIs
 
-Aucune bibliothèque n'est requise — tout passe par `fetch`.
+No library is required — everything goes through `fetch`.
 
 ```js
-// Identité de l'application, telle que l'exécutable la porte
+// The application's identity, as the executable carries it
 const app = await (await fetch('/api/app')).json();
 
-// Fichiers
-await fetch('/files/notes.txt', { method: 'PUT', body: 'bonjour' });
-const texte = await (await fetch('/files/notes.txt')).text();
-const { entries } = await (await fetch('/files/dossier/')).json();
+// Files
+await fetch('/files/notes.txt', { method: 'PUT', body: 'hello' });
+const text = await (await fetch('/files/notes.txt')).text();
+const { entries } = await (await fetch('/files/folder/')).json();
 
-// Dossiers — la barre oblique finale les désigne
+// Folders — the trailing slash is what designates them
 await fetch('/files/photos/', { method: 'PUT' });
 await fetch('/files/photos/?recursive=1', { method: 'DELETE' });
 
@@ -68,90 +67,89 @@ await fetch('/api/sqlite/app.db/execute', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-        sql: 'INSERT INTO notes(texte) VALUES($t)',
-        parameters: { $t: 'bonjour' }
+        sql: 'INSERT INTO notes(text) VALUES($t)',
+        parameters: { $t: 'hello' }
     })
 });
 ```
 
-**`samples/Todo`** est une application complète qui exerce toutes ces capacités.
-Copiez ses dossiers `app` et `config` à côté de `Proton.exe`, lancez-le, puis
-`Proton.exe /config` pour en faire un programme à part entière.
+**`samples/Todo`** is a complete application that exercises all of these. Copy its
+`app` and `config` folders next to `Proton.exe`, run it, then `Proton.exe /config` to
+turn it into a program of its own.
 
-### Personnaliser l'exécutable
+### Personalising the executable
 
-Préparez `config/config.json` et `config/icon.ico` :
+Prepare `config/config.json` and `config/icon.ico`:
 
 ```json
 {
-  "name": "Gestion Inventaire",
-  "executableName": "GestionInventaire.exe",
-  "windowTitle": "Gestion Inventaire — Édition 2026",
+  "name": "Inventory Manager",
+  "executableName": "InventoryManager.exe",
+  "windowTitle": "Inventory Manager — 2026 Edition",
   "version": "2.4.1",
-  "company": "Atelier Kevin",
+  "company": "Kevin's Workshop",
   "window": { "width": 1280, "height": 800, "resizable": true }
 }
 ```
 
-puis lancez :
+then run:
 
 ```bash
 Proton.exe /config
 ```
 
-Vous obtenez `GestionInventaire.exe` : même moteur, avec son nom, son icône, ses
-métadonnées Windows **et votre application embarquée**. `Proton.exe` reste intact.
+You get `InventoryManager.exe`: the same engine, with its name, its icon, its Windows
+metadata **and your application embedded in it**. `Proton.exe` is left untouched.
 
-Distribuez ce fichier, et rien d'autre. `data` se crée au premier démarrage.
+Distribute that file, and nothing else. `data` is created on first start.
 
-Pour livrer un contenu initial — modèles, catalogue, base pré-remplie — ajoutez le
-paramètre `data` :
+To ship initial content — templates, a catalogue, a pre-filled database — add the
+`data` argument:
 
 ```bash
 Proton.exe /config data
 ```
 
-Il embarque aussi `data/`, déposé au premier démarrage si ce dossier
-n'existe pas encore.
+It embeds `data/` as well, laid down on first start if that folder does not already
+exist.
 
 ---
 
-## État
+## Status
 
-Les sept phases prévues sont implémentées. Le moteur démarre, sert son application,
-expose ses API et sait produire des exécutables personnalisés.
+The seven planned phases are implemented. The engine starts, serves its application,
+exposes its APIs and can produce personalised executables.
 
-| Phase | Contenu |
+| Phase | Contents |
 | --- | --- |
-| 1–2 | Fenêtre, WebView2, Kestrel, port automatique, initialisation |
-| 3 | API de fichiers, dossiers, `/api/app` |
-| 4 | API SQLite — requêtes, écritures, transactions ; bases isolées dans `data/db` |
-| 5 | Journal de diagnostic, traitement uniforme des erreurs |
-| 6 | Mode `/config` — icône, métadonnées, configuration embarquée |
-| 7 | Publication self-contained, fichier unique, compressé |
+| 1–2 | Window, WebView2, Kestrel, automatic port, initialisation |
+| 3 | File and folder API, `/api/app` |
+| 4 | SQLite API — queries, writes, transactions; databases isolated in `data/db` |
+| 5 | Diagnostic log, uniform error handling |
+| 6 | `/config` mode — icon, metadata, embedded configuration |
+| 7 | Self-contained publication, single file, compressed |
 
-**128 tests automatisés.** Les critères d'acceptation de la V1 sont récapitulés en
-fin d'analyse fonctionnelle.
+**128 automated tests.** The V1 acceptance criteria are summarised at the end of the
+functional analysis.
 
-Ce qui reste hors périmètre est énuméré en §60, et les simplifications assumées dans
+What falls outside the scope is listed in §60, and the accepted simplifications in
 [docs/02-perimetre-v1.md](docs/02-perimetre-v1.md).
 
 ---
 
-## Compiler
+## Building
 
 ```bash
 dotnet publish src/Proton/Proton.csproj -c Release
 ```
 
-L'exécutable est produit dans **`C:\proton\dist\Proton.exe`**, et les artefacts
-intermédiaires dans `C:\proton\build`.
+The executable lands in **`C:\proton\dist\Proton.exe`**, and the intermediate
+artefacts in `C:\proton\build`.
 
-Les sorties ne restent volontairement pas dans le dépôt : une publication
-self-contained pèse une soixantaine de mégaoctets, ce qui encombre l'arbre de travail
-et devient franchement gênant lorsque le dossier est synchronisé par un service de
-stockage en ligne. La racine de sortie se change par la variable d'environnement
-`PROTON_OUTPUT_ROOT`.
+The outputs deliberately stay out of the repository: a self-contained publication
+weighs some sixty megabytes, which clutters the working tree and becomes genuinely
+awkward when the folder is synchronised by an online storage service. The output root
+can be changed with the `PROTON_OUTPUT_ROOT` environment variable.
 
 ```bash
 dotnet test
@@ -161,31 +159,37 @@ dotnet test
 
 ## Documents
 
-| Document | Contenu |
-| --- | --- |
-| [Documentation](https://kevin-belanger.github.io/Proton/) | **La documentation d'utilisation** — en anglais, destinée à qui découvre Proton. Source : [docs/index.html](docs/index.html) |
-| [Analyse fonctionnelle](Proton%20-%20Analyse%20fonctionnelle.md) | La spécification : ce que Proton doit faire, et ses critères d'acceptation |
-| [docs/](docs/) | Notes techniques — les mécanismes établis expérimentalement |
-| [prototypes/](prototypes/) | Les prototypes qui ont tranché ces questions, avec leurs mesures |
-| [samples/](samples/) | Applications d'exemple |
+| Document | Contents | Language |
+| --- | --- | --- |
+| [Documentation](https://kevin-belanger.github.io/Proton/) | **The user documentation** — for anyone discovering Proton. Source: [docs/index.html](docs/index.html) | English |
+| [Functional analysis](Proton%20-%20Analyse%20fonctionnelle.md) | The specification: what Proton must do, and its acceptance criteria | French |
+| [docs/](docs/) | Technical notes — the mechanisms established experimentally | French |
+| [prototypes/](prototypes/) | The prototypes that settled those questions, with their measurements | French |
+| [samples/](samples/) | Example applications | English |
 
-L'analyse décrit le **quoi**. Les notes de `docs/` décrivent le **comment**, uniquement
-lorsqu'il a demandé une vérification. Les deux se renvoient l'un à l'autre plutôt que
-de se répéter.
+The analysis describes the **what**. The notes in `docs/` describe the **how**, only
+where it required verification. The two refer to each other rather than repeating
+themselves.
 
-`docs/index.html` est publié par GitHub Pages depuis le dossier `docs` de `main`
-(§63.1). La page d'accueil du moteur y renvoie par un lien plutôt que d'en reprendre
-le contenu : présenter Proton à qui l'évalue et accueillir qui vient de le lancer sont
-deux travaux différents (§8.1).
+**On language:** everything Proton says to its user is in English — this file, the
+documentation, the samples, the `/config` output, the dialogs and the diagnostic log.
+Everything the project says about itself is in French: the analysis, the technical
+notes and the code comments. The boundary runs at the level of the string, not the
+file (§63.2).
+
+`docs/index.html` is published by GitHub Pages from the `docs` folder of `main`
+(§63.1). The engine's starter page links to it rather than reproducing it: presenting
+Proton to someone evaluating it and welcoming someone who has just launched it are two
+different jobs (§8.1).
 
 ---
 
 ## Technologies
 
-C# / .NET 10 · WebView2 · Kestrel · SQLite (`Microsoft.Data.Sqlite`) · publication
-self-contained en fichier unique.
+C# / .NET 10 · WebView2 · Kestrel · SQLite (`Microsoft.Data.Sqlite`) · self-contained
+single-file publication.
 
-Le diagnostic est écrit dans `%LOCALAPPDATA%\Proton\logs\proton.log`.
+Diagnostics are written to `%LOCALAPPDATA%\Proton\logs\proton.log`.
 
 ---
 
@@ -193,8 +197,7 @@ Le diagnostic est écrit dans `%LOCALAPPDATA%\Proton\logs\proton.log`.
 
 [MIT](LICENSE) — Copyright (c) 2026 Kevin Belanger.
 
-Les applications construites avec Proton vous appartiennent : vous pouvez les
-distribuer comme vous l'entendez, y compris commercialement et sans publier vos
-sources. Le moteur étant embarqué dans chaque exécutable produit, son attribution y
-est inscrite automatiquement — dans les propriétés du fichier et sur `/api/app`.
-Vous n'avez rien à faire.
+Applications built with Proton are yours: you may distribute them however you like,
+commercially included, without publishing your sources. Since the engine is embedded in
+every executable produced, its attribution is written there automatically — in the
+file's properties and on `/api/app`. There is nothing for you to do.
