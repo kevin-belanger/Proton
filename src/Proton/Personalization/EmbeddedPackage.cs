@@ -6,7 +6,7 @@ using Proton.Configuration;
 namespace Proton.Personalization;
 
 /// <summary>
-/// Contenu embarqué dans l'exécutable par le mode <c>/config</c> (§39, §39.1).
+/// Contenu embarqué dans l'exécutable par le mode <c>/generate</c> (§39, §39.1).
 ///
 /// Le trailer est annexé <b>après</b> le bundle .NET plutôt que stocké en ressource
 /// PE : le bundle ignore ces octets, et aucun de ses décalages n'est affecté. Voir

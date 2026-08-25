@@ -164,7 +164,7 @@ nom, titre, version, éditeur, plus l'identité du moteur.
 
 ### Pourquoi
 
-Sans elle, le mode `/config` produit une incohérence : le développeur définit un nom et
+Sans elle, le mode `/generate` produit une incohérence : le développeur définit un nom et
 une version, Proton les embarque fidèlement dans l'exécutable, et son JavaScript n'y a
 aucun accès. Il devrait les redéclarer dans son HTML, avec la divergence qui s'installe
 à la première mise à jour oubliée.

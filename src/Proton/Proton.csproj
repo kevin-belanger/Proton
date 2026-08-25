@@ -17,7 +17,7 @@
   </PropertyGroup>
 
   <!-- Identité par défaut du moteur générique. Un exécutable produit par le mode
-       /config remplacera ces métadonnées par celles de son config.json. -->
+       /generate remplacera ces métadonnées par celles de son config.json. -->
   <PropertyGroup>
     <Product>Proton</Product>
     <AssemblyTitle>Proton</AssemblyTitle>
@@ -27,7 +27,7 @@
 
   <!-- Publication : self-contained, un seul fichier, bundle compressé.
        Voir notes/01-personnalisation-executable.md — ces trois choix sont
-       compatibles avec la personnalisation par le mode /config. -->
+       compatibles avec la personnalisation par le mode /generate. -->
   <PropertyGroup>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>

@@ -7,7 +7,7 @@ namespace Proton.WebView;
 ///
 /// Windows Forms ne la reprend pas de lui-même : une fenêtre affiche l'icône par
 /// défaut du framework tant qu'aucune autre ne lui est assignée. L'icône posée par le
-/// mode <c>/config</c> serait alors visible dans l'Explorateur, mais ni dans la barre
+/// mode <c>/generate</c> serait alors visible dans l'Explorateur, mais ni dans la barre
 /// de titre ni dans la barre des tâches.
 ///
 /// Elle doit être fournie par la propriété <c>Icon</c> de la fenêtre, et non par un

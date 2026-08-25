@@ -24,7 +24,7 @@ straight away.
 To turn it into a program of its own:
 
 ```bash
-Proton.exe /config
+Proton.exe /generate
 ```
 
 You get **`ProtonTodo.exe`** — your application, its icon and its name, in a single
@@ -69,7 +69,7 @@ attachment folders exist before asking what is inside them means never requestin
 folder that isn't there — and no stray 404s in the console.
 
 **The title comes from the executable.** `GET /api/app` returns the name embedded by
-`/config`, so the packaged application calls itself *Proton Todo* while the plain
+`/generate`, so the packaged application calls itself *Proton Todo* while the plain
 engine keeps the title written in the HTML.
 
 ## The APIs it uses

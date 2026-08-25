@@ -74,7 +74,7 @@ await fetch('/api/sqlite/app.db/execute', {
 ```
 
 **`samples/Todo`** is a complete application that exercises all of these. Copy its
-`app` and `config` folders next to `Proton.exe`, run it, then `Proton.exe /config` to
+`app` and `config` folders next to `Proton.exe`, run it, then `Proton.exe /generate` to
 turn it into a program of its own.
 
 ### Personalising the executable
@@ -95,7 +95,7 @@ Prepare `config/config.json` and `config/icon.ico`:
 then run:
 
 ```bash
-Proton.exe /config
+Proton.exe /generate
 ```
 
 You get `InventoryManager.exe`: the same engine, with its name, its icon, its Windows
@@ -107,7 +107,7 @@ To ship initial content — templates, a catalogue, a pre-filled database — ad
 `data` argument:
 
 ```bash
-Proton.exe /config data
+Proton.exe /generate data
 ```
 
 It embeds `data/` as well, laid down on first start if that folder does not already
@@ -126,7 +126,7 @@ exposes its APIs and can produce personalised executables.
 | 3 | File and folder API, `/api/app` |
 | 4 | SQLite API — queries, writes, transactions; databases isolated in `data/db` |
 | 5 | Diagnostic log, uniform error handling |
-| 6 | `/config` mode — icon, metadata, embedded configuration |
+| 6 | `/generate` mode — icon, metadata, embedded configuration |
 | 7 | Self-contained publication, single file, compressed |
 
 **128 automated tests.** The V1 acceptance criteria are summarised at the end of the
@@ -172,7 +172,7 @@ where it required verification. The two refer to each other rather than repeatin
 themselves.
 
 **On language:** everything Proton says to its user is in English — this file, the
-documentation, the samples, the `/config` output, the dialogs and the diagnostic log.
+documentation, the samples, the `/generate` output, the dialogs and the diagnostic log.
 Everything the project says about itself is in French: the analysis, the technical
 notes and the code comments. The boundary runs at the level of the string, not the
 file (§63.2).

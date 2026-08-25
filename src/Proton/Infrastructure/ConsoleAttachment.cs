@@ -6,7 +6,7 @@ namespace Proton.Infrastructure;
 /// Rattache le processus à la console qui l'a lancé.
 ///
 /// Proton est publié en application graphique : il ne possède pas de console, et sa
-/// sortie standard n'aboutit nulle part. Le mode <c>/config</c> étant un outil de
+/// sortie standard n'aboutit nulle part. Le mode <c>/generate</c> étant un outil de
 /// ligne de commande, il doit pouvoir écrire là où le développeur l'a lancé.
 ///
 /// Lorsqu'aucune console n'existe — un double-clic depuis l'Explorateur — la

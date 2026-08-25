@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 1.10
+**Version du document :** 1.11
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 1.11 — le drapeau `/config` devient `/generate` (§35.1); l'ancienne orthographe reste acceptée.
 * 1.10 — la documentation devient un site de quatre pages; les notes techniques quittent `docs/` pour `notes/` (§63.1).
 * 1.9 — règle de langue : tout ce que Proton dit à son utilisateur passe en anglais (§63.2).
 * 1.8 — la documentation d'utilisation est publiée par GitHub Pages (§63.1); la page d'accueil y renvoie au lieu de la reprendre (§8.1).
@@ -354,7 +355,7 @@ cassée, ce qui est exactement l'inverse du diagnostic recherché.
 La documentation, elle, vit dans `docs/index.html` et n'est pas embarquée : elle est
 publiée par GitHub Pages (§63.1).
 
-Un exécutable produit par `/config` n'est concerné par rien de tout ceci : il sert sa
+Un exécutable produit par `/generate` n'est concerné par rien de tout ceci : il sert sa
 propre application depuis son archive et ne crée aucun dossier `app` (§39.1).
 
 Si `data` n'existe pas, Proton doit le créer, avec ses deux sous-dossiers.
@@ -1375,7 +1376,7 @@ Les API donnant volontairement accès à davantage de ressources système feront
 
 ---
 
-# 35. Mode de personnalisation `/config`
+# 35. Mode de génération `/generate`
 
 Proton doit posséder deux modes d'exécution principaux.
 
@@ -1385,19 +1386,35 @@ Mode normal :
 Proton.exe
 ```
 
-Mode de personnalisation :
+Mode de génération :
 
 ```text
-Proton.exe /config
+Proton.exe /generate
 ```
 
 L'alias :
 
 ```text
-Proton.exe --config
+Proton.exe --generate
 ```
 
-peut également être accepté, mais `/config` constitue la syntaxe principale prévue.
+peut également être accepté, mais `/generate` constitue la syntaxe principale prévue.
+
+## 35.1 Le drapeau se nommait `/config`
+
+*Renommé après la V1.0.*
+
+`/config` désignait la même chose que le dossier `config` : un mot pour une action et
+pour son entrée. La commande se lisait comme « montre-moi la configuration », alors
+qu'elle fabrique un exécutable. Le reste du vocabulaire disait déjà l'inverse —
+`ExecutableGenerator`, `GenerationResult`, et le message final annonce *generated*.
+
+`/generate` lisant `config/` sépare le verbe de son entrée.
+
+**`/config` et `--config` restent acceptés**, sans figurer dans la documentation. La
+V1.0 est publiée : ses notes de version et les instructions déjà recopiées ailleurs
+nomment l'ancienne orthographe, et rien ne justifie de les casser pour un mot. Le coût
+est d'un terme supplémentaire dans une comparaison.
 
 ---
 
@@ -1427,14 +1444,14 @@ Le développeur :
 
 1. prépare `config.json`;
 2. place `icon.ico`;
-3. lance `Proton.exe /config`;
+3. lance `Proton.exe /generate`;
 4. obtient un nouvel exécutable personnalisé.
 
 ---
 
 # 37. Principe du générateur
 
-L'exécutable exécuté avec `/config` ne doit pas se modifier lui-même.
+L'exécutable exécuté avec `/generate` ne doit pas se modifier lui-même.
 
 Il doit :
 
@@ -1447,7 +1464,7 @@ Par exemple :
 
 ```text
 Proton.exe
-      ↓ /config
+      ↓ /generate
 GestionInventaire.exe
 ```
 
@@ -1464,7 +1481,7 @@ La personnalisation ne doit pas supprimer les capacités internes de Proton.
 Par conséquent :
 
 ```text
-GestionInventaire.exe /config
+GestionInventaire.exe /generate
 ```
 
 doit lui-même être capable de générer un autre exécutable personnalisé.
@@ -1474,7 +1491,7 @@ Il n'existe donc pas réellement deux moteurs différents, « générateur » et
 Chaque exécutable Proton possède le moteur complet et peut fonctionner :
 
 * normalement;
-* ou en mode `/config`.
+* ou en mode `/generate`.
 
 ---
 
@@ -1505,7 +1522,7 @@ figurent dans `notes/01-personnalisation-executable.md`.
 
 ## 39.1 L'application voyage avec le moteur
 
-Le mode `/config` embarque **toujours** le dossier `app` dans l'exécutable produit. Il
+Le mode `/generate` embarque **toujours** le dossier `app` dans l'exécutable produit. Il
 n'est jamais extrait : l'application est servie directement depuis l'archive.
 
 C'est ce qui garantit qu'une application ne peut pas se désynchroniser de son moteur.
@@ -1524,7 +1541,7 @@ Au premier démarrage, l'exécutable crée `data` et `db`. Aucun dossier `app` n
 ### Contenu initial
 
 ```text
-Proton.exe /config data
+Proton.exe /generate data
 ```
 
 Le paramètre `data` embarque également le contenu de `data` et `db` : modèles de
@@ -1623,7 +1640,7 @@ Ces propriétés ne doivent toutefois pas empêcher la réalisation de la V1 min
 
 # 43. Génération atomique
 
-Le mode `/config` ne doit pas risquer de produire un exécutable partiellement écrit.
+Le mode `/generate` ne doit pas risquer de produire un exécutable partiellement écrit.
 
 Une stratégie recommandée est :
 
@@ -1640,7 +1657,7 @@ L'exécutable source ne doit jamais être modifié.
 
 # 44. Régénération
 
-Le mode `/config` doit être réexécutable.
+Le mode `/generate` doit être réexécutable.
 
 Si la configuration change :
 
@@ -1652,7 +1669,7 @@ config/icon.ico
 le développeur doit pouvoir relancer :
 
 ```text
-Proton.exe /config
+Proton.exe /generate
 ```
 
 pour générer à nouveau l'application.
@@ -2025,7 +2042,7 @@ Proton doit afficher une erreur compréhensible si, par exemple :
 * le dossier `data` n'est pas accessible;
 * WebView2 ne peut pas être initialisé;
 * une configuration embarquée est invalide;
-* le mode `/config` échoue.
+* le mode `/generate` échoue.
 
 Les détails techniques utiles au diagnostic doivent être conservés ou affichables.
 
@@ -2055,7 +2072,7 @@ Le moteur doit néanmoins pouvoir produire suffisamment d'information pour diagn
 * les erreurs HTTP graves;
 * les erreurs SQLite;
 * les erreurs WebView2;
-* les erreurs de génération `/config`.
+* les erreurs de génération `/generate`.
 
 Les journaux ne doivent pas encombrer le dossier de l'application en fonctionnement normal.
 
@@ -2318,7 +2335,7 @@ config/icon.ico
 puis exécute :
 
 ```text
-Proton.exe /config
+Proton.exe /generate
 ```
 
 ---
@@ -2387,7 +2404,7 @@ s'adresse à qui le construit.
 | `index.html` | ce qu'est Proton, ce qu'il ajoute à une page Web, ce qu'il ne fait pas |
 | `getting-started.html` | première exécution, boucle de développement, emballage de l'exemple pas à pas |
 | `api.html` | référence complète des trois API — routes, formes de réponse, codes d'erreur, limites |
-| `packaging.html` | `config.json` au complet, `/config`, distribution, causes d'échec |
+| `packaging.html` | `config.json` au complet, `/generate`, distribution, causes d'échec |
 
 `style.css` leur est commun, et `logo-96.png` / `logo-256.png` sont des réductions du
 logo `proton.png`, dont la taille d'origine ne convient pas à un en-tête de page.
@@ -2421,7 +2438,7 @@ dit de lui-même est en **français**.
 | Ce document, `notes/`, `prototypes/` | qui construit Proton | français |
 | Commentaires du code | qui le modifie | français |
 | `README.md`, le site `docs/`, `samples/` | qui **utilise** Proton | anglais |
-| Sortie de `/config`, boîtes de dialogue, messages d'erreur des API | l'utilisateur | anglais |
+| Sortie de `/generate`, boîtes de dialogue, messages d'erreur des API | l'utilisateur | anglais |
 | Journal de diagnostic | l'utilisateur, que la documentation y envoie | anglais |
 
 `README.md` est la page d'accueil du dépôt sur GitHub : c'est le premier texte que
@@ -2656,7 +2673,7 @@ config/icon.ico
 et :
 
 ```text
-Proton.exe /config
+Proton.exe /generate
 ```
 
 un nouvel exécutable personnalisé doit être créé sans modifier `Proton.exe`.
@@ -2692,7 +2709,7 @@ Le nouvel exécutable doit continuer de fonctionner exactement de la même mani�
 Un exécutable personnalisé doit lui-même accepter :
 
 ```text
-/config
+/generate
 ```
 
 et être capable de créer une autre copie personnalisée.
@@ -2832,7 +2849,7 @@ Ajouter :
 
 ---
 
-## Phase 6 — `/config`
+## Phase 6 — `/generate`
 
 Implémenter :
 
@@ -2856,7 +2873,7 @@ Configurer :
 
 * build Release;
 * publication self-contained;
-* publication single-file — confirmée compatible avec la personnalisation `/config`;
+* publication single-file — confirmée compatible avec la personnalisation `/generate`;
 * compression du bundle activée, qui réduit l'exécutable d'environ moitié;
 * package GitHub;
 * documentation minimale.
@@ -2897,7 +2914,7 @@ Ces questions ne doivent pas empêcher la réalisation du prototype fonctionnel.
 
 Proton V1 peut être résumé ainsi :
 
-> Proton est un moteur Windows autonome permettant d'exécuter une application HTML/CSS/JavaScript dans une fenêtre WebView2. Il démarre automatiquement un serveur Kestrel local sur un port disponible, sert l'application depuis le dossier `app`, fournit une API REST sécurisée pour gérer les fichiers du dossier `data`, fournit une couche HTTP permettant d'utiliser des bases SQLite locales et permet, via un mode `/config`, de générer une copie personnalisée et redistribuable de l'exécutable avec son propre nom et sa propre icône.
+> Proton est un moteur Windows autonome permettant d'exécuter une application HTML/CSS/JavaScript dans une fenêtre WebView2. Il démarre automatiquement un serveur Kestrel local sur un port disponible, sert l'application depuis le dossier `app`, fournit une API REST sécurisée pour gérer les fichiers du dossier `data`, fournit une couche HTTP permettant d'utiliser des bases SQLite locales et permet, via un mode `/generate`, de générer une copie personnalisée et redistribuable de l'exécutable avec son propre nom et sa propre icône.
 
 La priorité de Proton est de conserver une expérience extrêmement simple :
 

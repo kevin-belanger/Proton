@@ -118,7 +118,7 @@
 
 <h2>Generating</h2>
 
-<pre class="shell"><code>Proton.exe /config</code></pre>
+<pre class="shell"><code>Proton.exe /generate</code></pre>
 
 <p>
     You get <strong><code>InventoryManager.exe</code></strong>: the same engine,
@@ -132,6 +132,12 @@
     double-clicking and the same report appears in a dialog, since there is no console
     to write to. The exit code is <code>0</code> on success and <code>2</code> on
     failure.
+</p>
+
+<p class="muted">
+    <code>--generate</code> works too, for shells that rewrite arguments beginning with
+    a slash — Git Bash turns <code>/generate</code> into a Windows path.
+    <code>/config</code>, the spelling used in 1.0, is still accepted.
 </p>
 
 <div class="note">
@@ -163,7 +169,7 @@
     <code>data</code> and add the <code>data</code> argument:
 </p>
 
-<pre class="shell"><code>Proton.exe /config data</code></pre>
+<pre class="shell"><code>Proton.exe /generate data</code></pre>
 
 <p>
     Both <code>data/files</code> and <code>data/db</code> are embedded, and laid down

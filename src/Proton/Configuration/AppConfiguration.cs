@@ -13,7 +13,7 @@ public sealed record WindowConfiguration
 /// <summary>
 /// Identité de l'application, telle que la porte l'exécutable.
 ///
-/// Elle provient de la configuration embarquée par le mode <c>/config</c> (§39), lue
+/// Elle provient de la configuration embarquée par le mode <c>/generate</c> (§39), lue
 /// en fin de fichier au démarrage. Un exécutable non personnalisé — le moteur
 /// générique — n'en possède pas et retombe sur les valeurs par défaut.
 /// </summary>

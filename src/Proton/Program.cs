@@ -23,7 +23,7 @@ internal static class Program
         ApplicationConfiguration.Initialize();
         InstallGlobalHandlers();
 
-        return IsConfigMode(args) ? RunGenerator(args) : RunApplication();
+        return IsGenerateMode(args) ? RunGenerator(args) : RunApplication();
     }
 
     /// <summary>
@@ -53,14 +53,20 @@ internal static class Program
     }
 
     /// <summary>
-    /// <c>/config</c> est la syntaxe principale ; <c>--config</c> est accepté car
+    /// <c>/generate</c> est la syntaxe principale ; <c>--generate</c> est accepté car
     /// certains interpréteurs réécrivent les arguments commençant par une barre
     /// oblique (§35).
     /// </summary>
-    private static bool IsConfigMode(string[] args) =>
-        args.Length > 0 && args[0] is "/config" or "--config";
+    /// <remarks>
+    /// <c>/config</c> était l'orthographe de la V1.0. Elle reste acceptée sans être
+    /// documentée : les exécutables déjà distribués portent des instructions qui la
+    /// nomment, et rien ne justifie de les casser pour un mot.
+    /// </remarks>
+    private static bool IsGenerateMode(string[] args) =>
+        args.Length > 0
+        && args[0] is "/generate" or "--generate" or "/config" or "--config";
 
-    // --- Mode de personnalisation (§35) -------------------------------------------
+    // --- Mode de génération (§35) -------------------------------------------------
 
     private static int RunGenerator(string[] args)
     {
@@ -85,7 +91,7 @@ internal static class Program
 
         // Lancé par double-clic : sans console, la boîte de dialogue est le seul
         // canal disponible (§54).
-        MessageBox.Show(report, "Proton — /config", MessageBoxButtons.OK,
+        MessageBox.Show(report, "Proton — /generate", MessageBoxButtons.OK,
             result.Success ? MessageBoxIcon.Information : MessageBoxIcon.Error);
 
         return result.Success ? 0 : 2;

@@ -339,7 +339,7 @@ public static class Scaffolding
         // version affichés ci-dessus.
         //
         // Le moteur générique n'a pas de version applicative — elle n'existe que
-        // pour un exécutable produit par /config. On retombe alors sur celle du
+        // pour un exécutable produit par /generate. On retombe alors sur celle du
         // moteur, plutôt que de laisser la ligne vide.
         fetch('/api/app')
             .then(reponse => reponse.ok ? reponse.json() : null)

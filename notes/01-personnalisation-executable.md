@@ -212,5 +212,5 @@ Les quatre premières lignes ont été réglées en portant le prototype dans le
 - Protocole expérimental et mesures : `prototypes/config-pe/README.md`
 - Analyse fonctionnelle : §37 à §45, phase 6, phase 7, §67
 
-> Sous Git Bash, `/config` est réécrit en chemin Windows par MSYS et l'argument
-> n'arrive pas au programme. Tester depuis PowerShell ou `cmd`, ou utiliser `--config`.
+> Sous Git Bash, `/generate` est réécrit en chemin Windows par MSYS et l'argument
+> n'arrive pas au programme. Tester depuis PowerShell ou `cmd`, ou utiliser `--generate`.
