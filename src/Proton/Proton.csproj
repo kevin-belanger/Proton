@@ -58,6 +58,13 @@
     <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4129.50" />
   </ItemGroup>
 
+  <!-- La page d'accueil du moteur générique est la documentation elle-même, prise
+       telle quelle dans docs/. Le dépôt n'en garde qu'une seule copie : celle que
+       le site publie et celle que Proton affiche ne peuvent pas diverger. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\docs\index.html" LogicalName="Proton.Welcome.html" />
+  </ItemGroup>
+
   <ItemGroup>
     <InternalsVisibleTo Include="Proton.Tests" />
   </ItemGroup>

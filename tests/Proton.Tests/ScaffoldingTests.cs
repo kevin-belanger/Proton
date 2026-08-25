@@ -52,13 +52,20 @@ public sealed class ScaffoldingTests : IDisposable
         Assert.Contains("<!doctype html>", page, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("Proton", page, StringComparison.Ordinal);
 
-        // La page se présente et interroge les API du moteur : c'est ce qui la
-        // distingue d'une page Web ordinaire.
+        // La page d'accueil est la documentation officielle elle-même : elle décrit
+        // les trois API que Proton ajoute à une page Web ordinaire.
         Assert.Contains("/api/app", page, StringComparison.Ordinal);
+        Assert.Contains("/api/sqlite", page, StringComparison.Ordinal);
+        Assert.Contains("/files", page, StringComparison.Ordinal);
 
-        // Aucune ressource externe : la page doit s'afficher sans réseau.
-        Assert.DoesNotContain("http://", page, StringComparison.Ordinal);
-        Assert.DoesNotContain("https://", page, StringComparison.Ordinal);
+        // Elle doit s'afficher sans réseau. Ce sont les ressources liées qui en
+        // décideraient — feuille de style, script, image, police — et non les liens,
+        // qu'un clic confie de toute façon au navigateur du système (§51.1).
+        Assert.DoesNotMatch(
+            "<(script|img|iframe|link|source|video|audio|embed|object)\\b", page);
+
+        Assert.DoesNotContain("@import", page, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("url(", page, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

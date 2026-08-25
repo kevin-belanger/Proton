@@ -45,7 +45,7 @@ public static class Scaffolding
 
             if (!File.Exists(index))
             {
-                File.WriteAllText(index, WelcomePage, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                File.WriteAllText(index, ReadWelcomePage(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 createdIndex = true;
             }
         }
@@ -135,193 +135,29 @@ public static class Scaffolding
     }
 
     /// <summary>
-    /// Page d'accueil engendrée au premier démarrage.
-    ///
-    /// Elle tient en un seul fichier, sans dépendance, et reste jetable : le
-    /// développeur la remplace par sa propre application. Elle interroge les API de
-    /// Proton pour montrer d'emblée ce qu'une page Web ordinaire ne peut pas faire,
-    /// et se contente d'annoncer « à venir » pour celles qui ne répondent pas encore.
+    /// Page d'accueil du moteur générique : la documentation officielle elle-même,
+    /// embarquée depuis <c>docs/index.html</c> au moment de la compilation.
     /// </summary>
-    private const string WelcomePage = """
-        <!doctype html>
-        <html lang="fr">
-        <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Proton</title>
-        <style>
-            :root {
-                color-scheme: light dark;
-                --fond: #fbfbfd;
-                --carte: #ffffff;
-                --texte: #1c1c1e;
-                --discret: #6b6b70;
-                --trait: #e4e4e8;
-                --accent: #3b6ef0;
-                --ok: #21a45d;
-                --attente: #b0b0b6;
-            }
-            @media (prefers-color-scheme: dark) {
-                :root {
-                    --fond: #1c1c1e;
-                    --carte: #252528;
-                    --texte: #f5f5f7;
-                    --discret: #9a9aa0;
-                    --trait: #38383c;
-                    --accent: #6f9bff;
-                    --ok: #43c97f;
-                    --attente: #5c5c62;
-                }
-            }
-            * { box-sizing: border-box; }
-            body {
-                margin: 0;
-                padding: 3rem 1.5rem;
-                background: var(--fond);
-                color: var(--texte);
-                font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
-                font-size: 15px;
-                line-height: 1.6;
-                display: flex;
-                justify-content: center;
-            }
-            main { width: 100%; max-width: 40rem; }
-            h1 {
-                margin: 0;
-                font-family: "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-                font-size: 2.25rem;
-                font-weight: 600;
-                letter-spacing: -0.02em;
-            }
-            .version { margin: 0.25rem 0 2rem; color: var(--discret); font-size: 0.9rem; }
-            p { margin: 0 0 1rem; }
-            .discret { color: var(--discret); }
-            code {
-                font-family: "Cascadia Code", Consolas, monospace;
-                font-size: 0.85em;
-                background: var(--carte);
-                border: 1px solid var(--trait);
-                border-radius: 4px;
-                padding: 0.1em 0.4em;
-            }
-            h2 {
-                margin: 2.5rem 0 0.75rem;
-                font-size: 0.8rem;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.06em;
-                color: var(--discret);
-            }
-            ul { list-style: none; margin: 0; padding: 0; }
-            li {
-                display: flex;
-                align-items: baseline;
-                gap: 0.75rem;
-                padding: 0.7rem 0;
-                border-bottom: 1px solid var(--trait);
-            }
-            li:last-child { border-bottom: none; }
-            .pastille {
-                flex: none;
-                width: 8px;
-                height: 8px;
-                border-radius: 50%;
-                background: var(--attente);
-                transform: translateY(-1px);
-            }
-            .pastille.ok { background: var(--ok); }
-            .nom { flex: 1; }
-            .nom code { background: none; border: none; padding: 0; color: var(--discret); }
-            .etat { color: var(--discret); font-size: 0.85rem; }
-        </style>
-        </head>
-        <body>
-        <main>
-            <h1 id="titre">Proton</h1>
-            <p class="version" id="version">moteur générique</p>
+    /// <remarks>
+    /// Le fichier est autonome — un seul HTML, sa feuille de style à l'intérieur,
+    /// aucune ressource distante — ce qui permet de le servir tel quel. Le dépôt n'en
+    /// conserve donc qu'une seule copie : la documentation publiée et la page que
+    /// Proton affiche sont littéralement le même fichier et ne peuvent pas diverger.
+    ///
+    /// Elle reste jetable : le développeur la remplace par sa propre application.
+    /// </remarks>
+    private static string ReadWelcomePage()
+    {
+        using Stream? stream = typeof(Scaffolding).Assembly
+            .GetManifestResourceStream(WelcomeResource);
 
-            <p>
-                Cette fenêtre est une application de bureau Windows dont toute
-                l'interface est écrite en HTML, CSS et JavaScript. Il n'y a ni
-                serveur à installer, ni runtime à déployer : l'exécutable contient
-                tout, et sert cette page depuis un serveur local qu'il démarre
-                lui-même.
-            </p>
-            <p>
-                Contrairement à une page Web ordinaire, une application Proton peut
-                lire et écrire des fichiers sur le disque et utiliser des bases de
-                données SQLite locales.
-            </p>
-            <p class="discret">
-                Pour commencer, remplacez le contenu du dossier <code>app</code> par
-                le vôtre. Vos fichiers vont dans <code>data/files</code>, vos bases
-                de données dans <code>data/db</code>.
-            </p>
+        if (stream is null)
+            throw new InvalidOperationException(
+                $"La ressource « {WelcomeResource} » manque à l'assembly.");
 
-            <h2>Services</h2>
-            <ul id="services">
-                <li>
-                    <span class="pastille ok"></span>
-                    <span class="nom">Application servie depuis <code>app/</code></span>
-                    <span class="etat">actif</span>
-                </li>
-            </ul>
-        </main>
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+        return reader.ReadToEnd();
+    }
 
-        <script>
-        const services = [
-            { url: '/api/app',            nom: 'Configuration',   chemin: '/api/app' },
-            { url: '/files/',             nom: 'Fichiers',        chemin: '/files' },
-            { url: '/api/sqlite',         nom: 'Bases SQLite',    chemin: '/api/sqlite' }
-        ];
-
-        const liste = document.getElementById('services');
-
-        for (const service of services) {
-            const ligne = document.createElement('li');
-            ligne.innerHTML =
-                '<span class="pastille"></span>' +
-                '<span class="nom">' + service.nom +
-                ' <code>' + service.chemin + '</code></span>' +
-                '<span class="etat">vérification…</span>';
-            liste.appendChild(ligne);
-            verifier(service, ligne);
-        }
-
-        async function verifier(service, ligne) {
-            const pastille = ligne.querySelector('.pastille');
-            const etat = ligne.querySelector('.etat');
-            try {
-                const reponse = await fetch(service.url);
-                if (reponse.status === 501) {
-                    etat.textContent = 'à venir';
-                } else if (reponse.ok) {
-                    pastille.classList.add('ok');
-                    etat.textContent = 'actif';
-                } else {
-                    etat.textContent = 'erreur ' + reponse.status;
-                }
-            } catch {
-                etat.textContent = 'injoignable';
-            }
-        }
-
-        // La configuration embarquée dans l'exécutable donne son identité à
-        // l'application : c'est elle, et non cette page, qui porte le nom et la
-        // version affichés ci-dessus.
-        fetch('/api/app')
-            .then(reponse => reponse.ok ? reponse.json() : null)
-            .then(app => {
-                if (!app) return;
-                document.title = app.name;
-                document.getElementById('titre').textContent = app.name;
-                document.getElementById('version').textContent =
-                    app.version ? 'version ' + app.version : '';
-            })
-            .catch(() => {});
-        </script>
-        </body>
-        </html>
-
-        """;
+    private const string WelcomeResource = "Proton.Welcome.html";
 }

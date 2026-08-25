@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 1.6
+**Version du document :** 1.7
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 1.7 — la page d'accueil du moteur générique devient la documentation officielle elle-même (§8.1).
 * 1.6 — licence MIT retenue, et son attribution portée par les exécutables générés (§45.1).
 * 1.5 — les données se regroupent sous une racine unique : `data/files` exposé par `/files`, `data/db` par l'API SQLite.
 * 1.4 — l'application est embarquée dans l'exécutable et servie depuis l'archive (§39.1) : la distribution se réduit à un fichier.
@@ -310,13 +311,33 @@ Cette page doit tenir en un seul fichier, sans ressource externe, et rester jeta
 elle est un point de départ que le développeur remplace par sa propre application,
 non un gabarit à désinstaller.
 
-Elle doit néanmoins faire plus qu'afficher un texte fixe. En interrogeant `/api/app`
-(§24.1) pour afficher le nom et la version de l'application, et en dressant l'état des
-services de Proton, elle montre d'emblée ce qu'une page Web ordinaire ne peut pas
-faire — et sert de premier diagnostic si quelque chose ne répond pas.
-
 Une application de démonstration complète n'a pas sa place ici : elle vit dans
 `samples` (§64) et n'a pas à voyager dans chaque exécutable produit.
+
+## 8.1 La page d'accueil est la documentation
+
+*Remplace la page de présentation initialement prévue.*
+
+Le premier démarrage est le seul moment où Proton dispose de l'attention d'un nouveau
+venu. Une page qui se contente de dresser l'état des services lui apprend que le
+moteur fonctionne, mais pas ce qu'il peut en faire.
+
+La page engendrée est donc la documentation officielle elle-même : le fichier
+`docs/index.html`, embarqué dans l'assembly à la compilation et déposé tel quel.
+
+Trois propriétés le permettent :
+
+- elle est **autonome** — un seul fichier, sa feuille de style à l'intérieur, aucune
+  ressource liée : elle s'affiche sans réseau, comme l'exige le paragraphe précédent;
+- ses liens sortants ne l'en empêchent pas : une navigation vers une origine étrangère
+  est confiée au navigateur du système (§51.1), jamais suivie dans la fenêtre. La page
+  devient ainsi le point de départ vers le dépôt, les versions publiées et l'exemple;
+- le dépôt n'en conserve **qu'une seule copie**. La documentation publiée et la page
+  que Proton affiche sont le même fichier : elles ne peuvent pas diverger, et une
+  correction n'a pas à être faite deux fois.
+
+Un exécutable produit par `/config` n'est pas concerné : il sert sa propre application
+depuis son archive et ne crée aucun dossier `app` (§39.1).
 
 Si `data` n'existe pas, Proton doit le créer, avec ses deux sous-dossiers.
 

@@ -161,6 +161,7 @@ dotnet test
 
 | Document | Contenu |
 | --- | --- |
+| [docs/index.html](docs/index.html) | **La documentation d'utilisation** — en anglais, destinée à qui découvre Proton |
 | [Analyse fonctionnelle](Proton%20-%20Analyse%20fonctionnelle.md) | La spécification : ce que Proton doit faire, et ses critères d'acceptation |
 | [docs/](docs/) | Notes techniques — les mécanismes établis expérimentalement |
 | [prototypes/](prototypes/) | Les prototypes qui ont tranché ces questions, avec leurs mesures |
@@ -169,6 +170,10 @@ dotnet test
 L'analyse décrit le **quoi**. Les notes de `docs/` décrivent le **comment**, uniquement
 lorsqu'il a demandé une vérification. Les deux se renvoient l'un à l'autre plutôt que
 de se répéter.
+
+`docs/index.html` tient en un seul fichier sans ressource externe : c'est ce qui lui
+permet d'être aussi la page d'accueil du moteur générique, déposée telle quelle au
+premier démarrage (§8.1). Le dépôt n'en garde qu'une copie.
 
 ---
 
