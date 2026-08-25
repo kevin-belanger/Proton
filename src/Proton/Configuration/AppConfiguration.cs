@@ -31,6 +31,18 @@ public sealed record AppConfiguration
     public static string EngineVersion =>
         typeof(AppConfiguration).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
 
+    /// <summary>
+    /// Licence du moteur.
+    /// </summary>
+    /// <remarks>
+    /// Le moteur est embarqué dans chaque application produite : la licence MIT
+    /// demande que son attribution y figure. Elle est portée à deux endroits — les
+    /// métadonnées Windows de l'exécutable, et cette route (§45.1).
+    /// </remarks>
+    public static string EngineLicense => "MIT";
+
+    public static string EngineCopyright => "Copyright (c) 2026 Kevin Belanger";
+
     /// <summary>Configuration du moteur générique, lancé sans personnalisation.</summary>
     public static AppConfiguration Default { get; } = new()
     {

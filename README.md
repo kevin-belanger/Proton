@@ -31,7 +31,7 @@ Ni installateur, ni serveur, ni runtime à installer séparément.
 ## Démarrer
 
 Téléchargez `Proton.exe`, placez-le dans un dossier vide et lancez-le. Il y crée
-`app`, `data` et `db`, puis affiche une page d'accueil.
+`app` et `data`, puis affiche une page d'accueil.
 
 Remplacez ensuite le contenu de `app` par le vôtre. Vos pages sont servies à la
 racine :
@@ -121,7 +121,7 @@ expose ses API et sait produire des exécutables personnalisés.
 | --- | --- |
 | 1–2 | Fenêtre, WebView2, Kestrel, port automatique, initialisation |
 | 3 | API de fichiers, dossiers, `/api/app` |
-| 4 | API SQLite — requêtes, écritures, transactions ; bases isolées dans `db` |
+| 4 | API SQLite — requêtes, écritures, transactions ; bases isolées dans `data/db` |
 | 5 | Journal de diagnostic, traitement uniforme des erreurs |
 | 6 | Mode `/config` — icône, métadonnées, configuration embarquée |
 | 7 | Publication self-contained, fichier unique, compressé |
@@ -180,4 +180,10 @@ Le diagnostic est écrit dans `%LOCALAPPDATA%\Proton\logs\proton.log`.
 
 ## Licence
 
-À déterminer.
+[MIT](LICENSE) — Copyright (c) 2026 Kevin Belanger.
+
+Les applications construites avec Proton vous appartiennent : vous pouvez les
+distribuer comme vous l'entendez, y compris commercialement et sans publier vos
+sources. Le moteur étant embarqué dans chaque exécutable produit, son attribution y
+est inscrite automatiquement — dans les propriétés du fichier et sur `/api/app`.
+Vous n'avez rien à faire.

@@ -1,7 +1,7 @@
 # Proton — Analyse fonctionnelle
 
 **Nom de code :** Proton
-**Version du document :** 1.5
+**Version du document :** 1.6
 **Cible fonctionnelle :** Version 1
 **Plateforme :** Windows
 **Technologie privilégiée :** C# / .NET 10
@@ -13,6 +13,7 @@ lorsqu'ils ont demandé une vérification expérimentale, sont consignés sépar
 
 **Révisions :**
 
+* 1.6 — licence MIT retenue, et son attribution portée par les exécutables générés (§45.1).
 * 1.5 — les données se regroupent sous une racine unique : `data/files` exposé par `/files`, `data/db` par l'API SQLite.
 * 1.4 — l'application est embarquée dans l'exécutable et servie depuis l'archive (§39.1) : la distribution se réduit à un fichier.
 * 1.3 — les bases SQLite quittent `data` pour un dossier `db` que nulle route n'expose (§26.1).
@@ -1646,6 +1647,29 @@ Une version ultérieure pourra permettre d'utiliser :
 
 Si un exécutable source signé est modifié pour produire un enfant, l'enfant doit être considéré comme non signé jusqu'à ce qu'une nouvelle signature valide lui soit appliquée.
 
+## 45.1 Attribution du moteur
+
+Proton est publié sous licence **MIT**.
+
+La licence demande que son attribution accompagne toute copie du logiciel. Or un
+exécutable généré contient le moteur entier : l'attribution doit donc y figurer, sans
+quoi la promesse du fichier unique s'accompagnerait d'un manquement.
+
+Elle est portée à deux endroits, tous deux renseignés automatiquement par le
+générateur :
+
+* le champ `Comments` des métadonnées Windows, visible dans les propriétés du
+  fichier;
+* la route `/api/app`, sous `engine`, pour qu'une application puisse l'afficher dans
+  son propre écran « À propos ».
+
+```text
+Comments : Built with Proton 1.0.0 — Copyright (c) 2026 Kevin Belanger (MIT License)
+```
+
+Le développeur n'a rien à faire : les champs qui lui appartiennent — nom, éditeur,
+version — restent les siens.
+
 ---
 
 # 46. Distribution finale d'une application
@@ -2294,7 +2318,7 @@ Le dépôt doit contenir au minimum :
 
 ```text
 README.md
-LICENSE ou indication de licence à déterminer
+LICENSE                 MIT (§45.1)
 src/
 tests/
 samples/

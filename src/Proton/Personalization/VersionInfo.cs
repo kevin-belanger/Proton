@@ -34,6 +34,9 @@ public static class VersionInfo
         public required string OriginalFilename { get; init; }
         public string? CompanyName { get; init; }
         public string? LegalCopyright { get; init; }
+
+        /// <summary>Champ libre. Proton y inscrit sa propre attribution (§45.1).</summary>
+        public string? Comments { get; init; }
         public Version Version { get; init; } = new(1, 0, 0, 0);
     }
 
@@ -88,6 +91,9 @@ public static class VersionInfo
 
         if (!string.IsNullOrWhiteSpace(fields.LegalCopyright))
             writer.StringValue("LegalCopyright", fields.LegalCopyright);
+
+        if (!string.IsNullOrWhiteSpace(fields.Comments))
+            writer.StringValue("Comments", fields.Comments);
 
         writer.EndBlock();
         writer.EndBlock();

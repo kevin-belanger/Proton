@@ -44,7 +44,9 @@ public static class AppEndpoints
                 engine = new
                 {
                     name = AppConfiguration.EngineName,
-                    version = AppConfiguration.EngineVersion
+                    version = AppConfiguration.EngineVersion,
+                    license = AppConfiguration.EngineLicense,
+                    copyright = AppConfiguration.EngineCopyright
                 }
             }, context.RequestAborted);
         });

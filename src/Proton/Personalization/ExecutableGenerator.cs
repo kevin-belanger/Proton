@@ -214,7 +214,13 @@ public static class ExecutableGenerator
         InternalName = Path.GetFileNameWithoutExtension(targetName),
         OriginalFilename = targetName,
         CompanyName = file.Company,
-        Version = ParseVersion(file.Version)
+        Version = ParseVersion(file.Version),
+
+        // La licence MIT demande que l'attribution du moteur accompagne toute copie.
+        // L'exécutable produit contient Proton entier : c'est ici qu'elle se loge (§45.1).
+        Comments = $"Built with {AppConfiguration.EngineName} {AppConfiguration.EngineVersion}"
+                 + $" — {AppConfiguration.EngineCopyright}"
+                 + $" ({AppConfiguration.EngineLicense} License)"
     };
 
     /// <summary>Une version absente ou mal formée ne doit pas faire échouer la génération.</summary>
